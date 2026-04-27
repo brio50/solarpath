@@ -63,6 +63,22 @@ Current values (update both when content changes):
 | SideView | `-195 -112 390 134` | 134 |
 
 ## Coordinate system
+
+### Key terms
+- **Azimuth (az)** — horizontal angle, like a compass bearing. 0° = North, 90° = East, 180° = South, 270° = West. Tells you which direction to face to see the sun.
+- **Elevation (elev)** — vertical angle above the horizon. 0° = on the horizon, 90° = straight overhead (zenith). Tells you how high the sun is in the sky.
+- Together, az + elev pin the sun to a unique point in the sky at a given moment.
+
+### How each view uses az and elev
+- **Top view** — elevation becomes radial distance from center (elev=0 → outer edge, elev=90 → center dot). Azimuth becomes the angle around the circle. Perspective: looking straight down from above.
+- **Side view** — azimuth becomes horizontal position (left/right relative to facing direction). Elevation becomes vertical height above the horizon line. Perspective: looking straight ahead at the sky panorama.
+
+### Rendering pipeline (no charting libraries — pure SVG)
+1. `arcPoints()` in `solar.js` sweeps the hour angle from sunrise to sunset and returns ~200 `{az, elev}` pairs per arc (one arc = one day).
+2. Each `{az, elev}` pair is projected into SVG `{x, y}` by `topViewCoords()` or `sideViewCoords()`.
+3. The resulting points are joined into a `points="x1,y1 x2,y2 ..."` string and rendered as an SVG `<polyline>`. All other elements (rings, axis lines, labels, dots) are plain SVG primitives placed by the same math.
+
+### SQUISH and elliptical shape
 Both views use `SQUISH = 95/148 ≈ 0.642` on the vertical axis to create the elliptical shape.
 
 **Top view** (`TopView.jsx`): center = zenith, facing direction at top, rotates data not compass.
@@ -114,4 +130,3 @@ A sample workflow file goes in `.github/workflows/`.
 ## User preference
 - Quality over speed — go slow, verify each step
 - User is not a JS developer; Claude drives all code decisions
-- User prefers Python but accepts JS/JSX for this browser-based project

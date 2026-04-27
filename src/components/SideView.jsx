@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { arcPoints, sideViewCoords, compassLabel, doyToDate, SQUISH, COLORS, SEASONS, sunWindowTimes } from "../lib/solar.js";
+import { arcPoints, sideViewCoords, compassLabel, doyToDate, SQUISH, COLORS, SEASONS } from "../lib/solar.js";
 
 const R = 150;
 
@@ -21,41 +21,38 @@ function arcSegments(pts, facing) {
   return segs;
 }
 
-function toPolyPts(seg, facing) {
-  return seg.map((p) => {
-    const { x, y } = sideViewCoords(p.az, p.elev, R, facing);
-    return `${x},${-y}`;
-  }).join(" ");
+function SunArc({ date, lat, lon, color, facing }) {
+  const allPts = arcPoints(date, lat, lon);
+  const maxT = Math.max(...allPts.map((p) => Math.sin(p.elev * Math.PI / 180)));
+  return arcSegments(allPts, facing).flatMap((seg, si) =>
+    seg.slice(0, -1).map((p, i) => {
+      const { x: x1, y: y1 } = sideViewCoords(p.az, p.elev, R, facing);
+      const { x: x2, y: y2 } = sideViewCoords(seg[i + 1].az, seg[i + 1].elev, R, facing);
+      const t = Math.sin(p.elev * Math.PI / 180);
+      const tNorm = maxT > 0 ? t / maxT : 0;
+      return (
+        <line key={`${si}-${i}`} x1={x1} y1={-y1} x2={x2} y2={-y2}
+          stroke={color} strokeOpacity={0.15 + 0.85 * t} strokeWidth={0.5 + 2.0 * tNorm}
+          vectorEffect="non-scaling-stroke" />
+      );
+    })
+  );
 }
 
-function SunArc({ date, lat, lon, color, dashed, facing }) {
-  return arcSegments(arcPoints(date, lat, lon), facing).map((seg, i) => (
-    <polyline
-      key={i}
-      points={toPolyPts(seg, facing)}
-      fill="none"
-      stroke={color}
-      strokeWidth={1.5}
-      strokeDasharray={dashed ? "6,4" : "none"}
-      vectorEffect="non-scaling-stroke"
-    />
-  ));
-}
-
-function RiseSetMarkers({ date, lat, lon, color, facing }) {
-  const segs = arcSegments(arcPoints(date, lat, lon), facing);
-  if (segs.length === 0) return null;
-
-  const first = segs[0];
-  const last = segs[segs.length - 1];
-  const r = sideViewCoords(first[0].az, first[0].elev, R, facing);
-  const s = sideViewCoords(last[last.length - 1].az, last[last.length - 1].elev, R, facing);
-
+function SunSymbol({ cx, cy }) {
   return (
-    <>
-      <text x={r.x} y={-r.y} textAnchor="middle" dominantBaseline="middle" style={{ fontSize: "10px" }} fill={color}>↑</text>
-      <text x={s.x} y={-s.y} textAnchor="middle" dominantBaseline="middle" style={{ fontSize: "10px" }} fill={color}>↓</text>
-    </>
+    <g>
+      {Array.from({ length: 8 }, (_, i) => {
+        const a = (i * Math.PI) / 4;
+        return (
+          <line key={i}
+            x1={cx + 4.5 * Math.sin(a)} y1={cy - 4.5 * Math.cos(a)}
+            x2={cx + 7.5 * Math.sin(a)} y2={cy - 7.5 * Math.cos(a)}
+            stroke="#FFBB00" strokeWidth={1.5} vectorEffect="non-scaling-stroke" />
+        );
+      })}
+      <circle cx={cx} cy={cy} r={3.5} fill="#FFBB00" stroke="white" strokeWidth={1} vectorEffect="non-scaling-stroke" />
+    </g>
   );
 }
 
@@ -109,9 +106,8 @@ function BehindZone() {
   );
 }
 
-function WindowDots({ date, lat, lon, facing, color }) {
+function WindowDots({ win, facing, color }) {
   const [hovered, setHovered] = useState(null);
-  const win = sunWindowTimes(date, lat, lon, facing);
   if (!win) return null;
 
   const { start, end, durationHours } = win;
@@ -147,7 +143,7 @@ function WindowDots({ date, lat, lon, facing, color }) {
   );
 }
 
-export default function SideView({ lat, lon, date, nowDot, facing }) {
+export default function SideView({ lat, lon, date, nowDot, facing, sunWindows }) {
   const year = date.getFullYear();
   const viewBox = "-195 -112 390 134";
 
@@ -167,22 +163,20 @@ export default function SideView({ lat, lon, date, nowDot, facing }) {
           const d = doyToDate(doy, year);
           return (
             <g key={name}>
-              <SunArc date={d} lat={lat} lon={lon} color={COLORS[name]} dashed={false} facing={facing} />
-              <RiseSetMarkers date={d} lat={lat} lon={lon} color={COLORS[name]} facing={facing} />
-              <WindowDots date={d} lat={lat} lon={lon} facing={facing} color={COLORS[name]} />
+              <SunArc date={d} lat={lat} lon={lon} color={COLORS[name]} facing={facing} />
+              <WindowDots win={sunWindows[name]} facing={facing} color={COLORS[name]} />
             </g>
           );
         })}
 
         <g>
-          <SunArc date={date} lat={lat} lon={lon} color={COLORS.today} dashed={true} facing={facing} />
-          <RiseSetMarkers date={date} lat={lat} lon={lon} color={COLORS.today} facing={facing} />
-          <WindowDots date={date} lat={lat} lon={lon} facing={facing} color={COLORS.today} />
+          <SunArc date={date} lat={lat} lon={lon} color={COLORS.today} facing={facing} />
+          <WindowDots win={sunWindows.today} facing={facing} color={COLORS.today} />
         </g>
 
         {nowDot && (() => {
           const { x, y } = sideViewCoords(nowDot.az, nowDot.elev, R, facing);
-          return <circle cx={x} cy={-y} r={5} fill={COLORS.today} stroke="white" strokeWidth={1.5} />;
+          return <SunSymbol cx={x} cy={-y} />;
         })()}
 
         <circle cx={0} cy={0} r={4} fill="#e4e4e7" />

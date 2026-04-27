@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import SunCalc from "suncalc";
 import TopView from "./components/TopView.jsx";
 import SideView from "./components/SideView.jsx";
@@ -6,10 +6,9 @@ import { Input } from "./components/ui/input.jsx";
 import { Slider } from "./components/ui/slider.jsx";
 import {
   doyToDate,
-  hoursOfDaylight,
-  solarNoonElevation,
   COLORS,
   SEASONS,
+  sunWindowTimes,
 } from "./lib/solar.js";
 
 const SEATTLE = { lat: 47.6762, lon: -122.3321, name: "Seattle, Washington" };
@@ -57,8 +56,6 @@ function Legend({ lat, lon, date }) {
   return (
     <div className="flex flex-wrap justify-center gap-1.5 mb-2">
       {rows.map(({ name, date: d, dashed }) => {
-        const peak = solarNoonElevation(d, lat, lon).toFixed(0);
-        const hrs = hoursOfDaylight(d, lat, lon).toFixed(1);
         const label = name === "today" ? "Today" : name.charAt(0).toUpperCase() + name.slice(1);
         return (
           <div key={name} className="flex items-center gap-1.5 bg-zinc-900 border border-zinc-800 rounded-full px-2.5 py-0.5">
@@ -66,19 +63,70 @@ function Legend({ lat, lon, date }) {
               <line x1={0} y1={4} x2={18} y2={4} stroke={COLORS[name]} strokeWidth={2} strokeDasharray={dashed ? "4,2.5" : "none"} />
             </svg>
             <span style={{ fontSize: 10 }} className="text-zinc-300 font-medium whitespace-nowrap">{label}</span>
-            <span style={{ fontSize: 10 }} className="text-zinc-500 whitespace-nowrap">{peak}° · {hrs}h</span>
           </div>
         );
       })}
-      <div className="flex items-center gap-1.5 bg-zinc-900 border border-zinc-800 rounded-full px-2.5 py-0.5">
-        <span style={{ fontSize: 10 }} className="text-zinc-500">↑ rise · ↓ set</span>
-      </div>
       <div className="flex items-center gap-1.5 bg-zinc-900 border border-zinc-800 rounded-full px-2.5 py-0.5">
         <svg width={10} height={10} style={{ flexShrink: 0 }}>
           <circle cx={5} cy={5} r={3.5} fill="#a1a1aa" stroke="white" strokeWidth={1} />
         </svg>
         <span style={{ fontSize: 10 }} className="text-zinc-500 whitespace-nowrap">hover for sun window</span>
       </div>
+    </div>
+  );
+}
+
+function SunTable({ sunWindows }) {
+  const rows = [...SEASONS.map(({ name }) => name), "today"];
+
+  const fmt = (t) => (t && !isNaN(t) ? t.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "—");
+  const fmtDur = (h) => {
+    const hh = Math.floor(h);
+    const mm = Math.round((h - hh) * 60);
+    return hh > 0 ? `${hh}h ${mm}m` : `${mm}m`;
+  };
+
+  const th = { fontSize: 9, textTransform: "uppercase", letterSpacing: "0.07em", color: "#71717a", fontWeight: 600, padding: "0 10px 8px 0", textAlign: "left", borderBottom: "1px solid #3f3f46" };
+  const td = { fontSize: 10, color: "#a1a1aa", padding: "6px 10px 6px 0", verticalAlign: "middle", borderBottom: "1px solid #27272a" };
+  const tdLast = { ...td, paddingRight: 0 };
+
+  return (
+    <div className="border border-zinc-800/70 rounded-xl bg-zinc-950/60 p-3 flex-shrink-0" style={{ width: 220 }}>
+      <table style={{ borderCollapse: "collapse", width: "100%", tableLayout: "fixed" }}>
+        <colgroup>
+          <col style={{ width: "30%" }} />
+          <col style={{ width: "23%" }} />
+          <col style={{ width: "23%" }} />
+          <col style={{ width: "24%" }} />
+        </colgroup>
+        <thead>
+          <tr>
+            <th style={th}>Line</th>
+            <th style={th}>Sun In</th>
+            <th style={th}>Sun Out</th>
+            <th style={{ ...th, paddingRight: 0 }}>Duration</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((name) => {
+            const win = sunWindows[name];
+            const label = name === "today" ? "Today" : name.charAt(0).toUpperCase() + name.slice(1);
+            return (
+              <tr key={name}>
+                <td style={td}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <div style={{ width: 8, height: 8, borderRadius: 2, backgroundColor: COLORS[name], flexShrink: 0 }} />
+                    <span style={{ fontSize: 10, color: "#d4d4d8", fontWeight: 500 }}>{label}</span>
+                  </div>
+                </td>
+                <td style={td}>{win ? fmt(win.start.t) : "—"}</td>
+                <td style={td}>{win ? fmt(win.end.t) : "—"}</td>
+                <td style={tdLast}>{win ? fmtDur(win.durationHours) : "—"}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
     </div>
   );
 }
@@ -105,6 +153,15 @@ export default function App() {
   const [selectedDate, setSelectedDate] = useState(today);
   const [nowDot, setNowDot] = useState(null);
   const [facing, setFacing] = useState(180);
+
+  const sunWindows = useMemo(() => {
+    const year = selectedDate.getFullYear();
+    const result = {};
+    for (const { name, doy } of SEASONS)
+      result[name] = sunWindowTimes(doyToDate(doy, year), lat, lon, facing, 360);
+    result.today = sunWindowTimes(selectedDate, lat, lon, facing, 360);
+    return result;
+  }, [lat, lon, selectedDate, facing]);
 
   const [locationName, setLocationName] = useState(SEATTLE.name);
   const [locationQuery, setLocationQuery] = useState(SEATTLE.name);
@@ -318,13 +375,16 @@ export default function App() {
       <Legend lat={lat} lon={lon} date={selectedDate} />
 
       {/* Diagram containers */}
-      <div className="flex-1 min-h-0 flex flex-col gap-1.5">
-        <div style={{ flex: 230, minHeight: 0 }} className="border border-zinc-800/70 rounded-xl overflow-hidden bg-zinc-950/60">
-          <TopView lat={lat} lon={lon} date={selectedDate} nowDot={nowDot} facing={facing} />
+      <div className="flex-1 min-h-0 flex flex-row gap-1.5">
+        <div className="flex-1 min-w-0 flex flex-col gap-1.5">
+          <div style={{ flex: 230, minHeight: 0 }} className="border border-zinc-800/70 rounded-xl overflow-hidden bg-zinc-950/60">
+            <TopView lat={lat} lon={lon} date={selectedDate} nowDot={nowDot} facing={facing} sunWindows={sunWindows} />
+          </div>
+          <div style={{ flex: 134, minHeight: 0 }} className="border border-zinc-800/70 rounded-xl overflow-hidden bg-zinc-950/60">
+            <SideView lat={lat} lon={lon} date={selectedDate} nowDot={nowDot} facing={facing} sunWindows={sunWindows} />
+          </div>
         </div>
-        <div style={{ flex: 134, minHeight: 0 }} className="border border-zinc-800/70 rounded-xl overflow-hidden bg-zinc-950/60">
-          <SideView lat={lat} lon={lon} date={selectedDate} nowDot={nowDot} facing={facing} />
-        </div>
+        <SunTable sunWindows={sunWindows} />
       </div>
 
     </div>
