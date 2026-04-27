@@ -1,6 +1,6 @@
 import { arcPoints, sideViewCoords, compassLabel, doyToDate, SQUISH, COLORS, SEASONS } from "../lib/solar.js";
 
-const R = 80;
+const R = 150;
 
 // Split arc into continuous segments, cutting only at the ±180° seam (directly behind viewer).
 function arcSegments(pts, facing) {
@@ -88,8 +88,8 @@ function Axes({ facing }) {
       <text x={-(R + 9)}     y={4} textAnchor="middle" style={{ fontSize: "9px" }} fill="#555" fontWeight="bold">{compassLabel(facing - 90)}</text>
       <text x={ R + 9}       y={4} textAnchor="middle" style={{ fontSize: "9px" }} fill="#555" fontWeight="bold">{compassLabel(facing + 90)}</text>
       <text x={0}            y={12} textAnchor="middle" style={{ fontSize: "9px" }} fill="#555" fontWeight="bold">{compassLabel(facing)}</text>
-      <text x={-(2 * R + 9)} y={4} textAnchor="middle" style={{ fontSize: "8px" }} fill="#aaa">{compassLabel(facing + 180)}</text>
-      <text x={ 2 * R + 9}   y={4} textAnchor="middle" style={{ fontSize: "8px" }} fill="#aaa">{compassLabel(facing + 180)}</text>
+      <text x={-180} y={4} textAnchor="middle" style={{ fontSize: "8px" }} fill="#aaa">{compassLabel(facing + 180)}</text>
+      <text x={ 180} y={4} textAnchor="middle" style={{ fontSize: "8px" }} fill="#aaa">{compassLabel(facing + 180)}</text>
       <text x={4} y={-(ry + 5)} style={{ fontSize: "7px" }} fill="#777">zenith</text>
     </>
   );
@@ -126,7 +126,7 @@ function BehindZone() {
 export default function SideView({ lat, lon, date, nowDot, facing }) {
   const year = date.getFullYear();
   const ry = R * SQUISH;
-  const viewBox = "-195 -175 390 300";
+  const viewBox = "-195 -112 390 134";
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>

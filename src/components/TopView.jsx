@@ -69,7 +69,7 @@ function CardinalLines({ facing }) {
 
 export default function TopView({ lat, lon, date, nowDot, facing }) {
   const year = date.getFullYear();
-  const viewBox = "-195 -135 390 300";
+  const viewBox = "-195 -115 390 230";
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>

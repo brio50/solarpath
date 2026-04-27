@@ -49,7 +49,7 @@ function Legend({ lat, lon, date }) {
   ];
 
   return (
-    <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "6px 20px", marginBottom: 8, fontSize: 12 }}>
+    <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "4px 16px", marginBottom: 4, fontSize: 11 }}>
       {rows.map(({ name, date: d, dashed }) => {
         const peak = solarNoonElevation(d, lat, lon).toFixed(0);
         const hrs = hoursOfDaylight(d, lat, lon).toFixed(1);
@@ -58,10 +58,10 @@ function Legend({ lat, lon, date }) {
             ? `Today  ${peak}° peak  ${hrs}h daylight`
             : `${name.charAt(0).toUpperCase() + name.slice(1)}  ${peak}° peak  ${hrs}h daylight`;
         return (
-          <div key={name} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <svg width={28} height={10}>
+          <div key={name} style={{ display: "flex", alignItems: "center", gap: 5 }}>
+            <svg width={24} height={9}>
               <line
-                x1={0} y1={5} x2={28} y2={5}
+                x1={0} y1={4.5} x2={24} y2={4.5}
                 stroke={COLORS[name]}
                 strokeWidth={2.5}
                 strokeDasharray={dashed ? "5,3" : "none"}
@@ -71,11 +71,8 @@ function Legend({ lat, lon, date }) {
           </div>
         );
       })}
-      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-        <span style={{ color: "#444" }}>▲ sunrise</span>
-      </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-        <span style={{ color: "#444" }}>▼ sunset</span>
+      <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+        <span style={{ color: "#444" }}>▲ sunrise  ▼ sunset</span>
       </div>
     </div>
   );
@@ -90,7 +87,6 @@ export default function App() {
   const [selectedDate, setSelectedDate] = useState(today);
   const [nowDot, setNowDot] = useState(null);
   const [facing, setFacing] = useState(180);
-  const [activeView, setActiveView] = useState("top");
 
   const updateNowDot = useCallback(() => {
     const todayStr = toDateInput(new Date());
@@ -126,13 +122,13 @@ export default function App() {
   const lonLabel = `${Math.abs(lon).toFixed(4)}°${lon >= 0 ? "E" : "W"}`;
 
   return (
-    <div style={{ height: "100vh", display: "flex", flexDirection: "column", overflow: "hidden", padding: "12px", boxSizing: "border-box", fontFamily: "sans-serif" }}>
-      <h1 style={{ textAlign: "center", fontSize: 16, fontWeight: 600, color: "#333", marginBottom: 10 }}>
+    <div style={{ height: "100vh", display: "flex", flexDirection: "column", overflow: "hidden", padding: "8px 12px", boxSizing: "border-box", fontFamily: "sans-serif" }}>
+      <h1 style={{ textAlign: "center", fontSize: 15, fontWeight: 600, color: "#333", margin: "0 0 6px" }}>
         Sun Path · {latLabel} {lonLabel} · {dateStr}
       </h1>
 
-      <div style={{ display: "flex", justifyContent: "center", gap: 20, marginBottom: 16, flexWrap: "wrap", fontSize: 13 }}>
-        <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 16, marginBottom: 6, flexWrap: "wrap", fontSize: 13 }}>
+        <label style={{ display: "flex", alignItems: "center", gap: 5 }}>
           Lat
           <input
             type="number"
@@ -140,10 +136,10 @@ export default function App() {
             value={latInput}
             onChange={(e) => setLatInput(e.target.value)}
             onBlur={commitLat}
-            style={{ width: 80, padding: "3px 6px", border: "1px solid #ccc", borderRadius: 4 }}
+            style={{ width: 76, padding: "2px 5px", border: "1px solid #ccc", borderRadius: 4 }}
           />
         </label>
-        <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        <label style={{ display: "flex", alignItems: "center", gap: 5 }}>
           Lon
           <input
             type="number"
@@ -151,62 +147,37 @@ export default function App() {
             value={lonInput}
             onChange={(e) => setLonInput(e.target.value)}
             onBlur={commitLon}
-            style={{ width: 80, padding: "3px 6px", border: "1px solid #ccc", borderRadius: 4 }}
+            style={{ width: 76, padding: "2px 5px", border: "1px solid #ccc", borderRadius: 4 }}
           />
         </label>
-        <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        <label style={{ display: "flex", alignItems: "center", gap: 5 }}>
           Date
           <input
             type="date"
             value={toDateInput(selectedDate)}
             onChange={(e) => setSelectedDate(parseDateInput(e.target.value))}
-            style={{ padding: "3px 6px", border: "1px solid #ccc", borderRadius: 4 }}
+            style={{ padding: "2px 5px", border: "1px solid #ccc", borderRadius: 4 }}
           />
         </label>
-      </div>
-
-      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 24, marginBottom: 12, fontSize: 13 }}>
-        <div style={{ display: "flex", gap: 0, borderBottom: "1px solid #ddd" }}>
-          {[{ label: "Top view", key: "top" }, { label: "Side view", key: "side" }].map(({ label, key }) => (
-            <button
-              key={key}
-              onClick={() => setActiveView(key)}
-              style={{
-                padding: "5px 18px",
-                fontSize: 13,
-                cursor: "pointer",
-                border: "none",
-                borderBottom: activeView === key ? "2px solid #1D9E75" : "2px solid transparent",
-                background: "none",
-                color: activeView === key ? "#1D9E75" : "#888",
-                fontWeight: activeView === key ? 600 : 400,
-              }}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ color: "#555", fontSize: 13 }}>Facing</span>
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ color: "#555" }}>Facing</span>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1 }}>
             <input
               type="range"
               min={0} max={360} step={1}
               value={facing}
               onChange={(e) => {
                 let v = Number(e.target.value);
-                // snap to cardinal within 8°
                 const snap = FACINGS.find(({ deg }) => Math.min(Math.abs(v - deg), 360 - Math.abs(v - deg)) <= 8);
                 setFacing(snap ? snap.deg : v % 360);
               }}
-              style={{ width: 160, accentColor: "#1D9E75", cursor: "pointer" }}
+              style={{ width: 140, accentColor: "#1D9E75", cursor: "pointer" }}
             />
-            <div style={{ display: "flex", justifyContent: "space-between", width: 160, fontSize: 11, color: "#888" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", width: 140, fontSize: 10, color: "#888" }}>
               <span>N</span><span>E</span><span>S</span><span>W</span><span>N</span>
             </div>
           </div>
-          <span style={{ fontSize: 13, color: "#1D9E75", fontWeight: 600, minWidth: 32, textAlign: "left" }}>
+          <span style={{ fontSize: 13, color: "#1D9E75", fontWeight: 600, minWidth: 28, textAlign: "left" }}>
             {facing}°
           </span>
         </div>
@@ -214,11 +185,13 @@ export default function App() {
 
       <Legend lat={lat} lon={lon} date={selectedDate} />
 
-      <div style={{ flex: 1, minHeight: 0 }}>
-        {activeView === "top"
-          ? <TopView lat={lat} lon={lon} date={selectedDate} nowDot={nowDot} facing={facing} />
-          : <SideView lat={lat} lon={lon} date={selectedDate} nowDot={nowDot} facing={facing} />
-        }
+      <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
+        <div style={{ flex: 230, minHeight: 0 }}>
+          <TopView lat={lat} lon={lon} date={selectedDate} nowDot={nowDot} facing={facing} />
+        </div>
+        <div style={{ flex: 134, minHeight: 0 }}>
+          <SideView lat={lat} lon={lon} date={selectedDate} nowDot={nowDot} facing={facing} />
+        </div>
       </div>
     </div>
   );

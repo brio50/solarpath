@@ -1,9 +1,8 @@
 import { describe, test, expect } from 'vitest';
 import { render } from '@testing-library/react';
 import SideView from './SideView.jsx';
-import { SQUISH } from '../lib/solar.js';
 
-const R = 80;
+const R = 150;
 
 const PROPS = {
   lat: 47.6762,
@@ -18,19 +17,20 @@ function renderSideView(props = {}) {
 }
 
 describe('SideView — viewBox', () => {
-  test('viewBox is 390 wide × 300 tall', () => {
+  test('viewBox is 390 wide × 134 tall (tight to content)', () => {
     const { container } = renderSideView();
     const svg = container.querySelector('svg');
     const [, , w, h] = svg.getAttribute('viewBox').split(' ').map(Number);
     expect(w).toBe(390);
-    expect(h).toBeCloseTo(300, 0);
+    expect(h).toBe(134);
   });
 
-  test('viewBox height matches TopView (300) so scale factors are equal', () => {
+  test('viewBox height-to-TopView ratio is 134:230 (proportional flex)', () => {
+    // SideView flex:134 and TopView flex:230 ensures both render at the same CSS scale.
     const { container } = renderSideView();
     const svg = container.querySelector('svg');
-    const parts = svg.getAttribute('viewBox').split(' ').map(Number);
-    expect(parts[3]).toBe(300);
+    const h = Number(svg.getAttribute('viewBox').split(' ')[3]);
+    expect(h).toBe(134);
   });
 });
 
@@ -59,7 +59,6 @@ describe('SideView — stroke widths', () => {
 
   test('horizon line has strokeWidth 0.5', () => {
     const { container } = renderSideView();
-    // the full-width horizon line spans x from -2R to 2R
     const horizonLine = [...container.querySelectorAll('line')].find(
       el => Number(el.getAttribute('x1')) === -2 * R && Number(el.getAttribute('x2')) === 2 * R
     );

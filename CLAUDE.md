@@ -46,19 +46,27 @@ The two views have different content proportions, so the same SVG user-unit valu
 | Elevation ring labels | 7 px font |
 | Now-dot | 5 px radius, 1.5 px white stroke |
 
-### Both viewBoxes must have the same height
-Both views use viewBox width 390. If the viewBox heights differ, the SVG scale factors differ and `vectorEffect="non-scaling-stroke"` font-size px values will not visually match. Keep both at height 300 by adjusting margins in each viewBox definition when content changes.
+### Tight viewBoxes + proportional flex
+Each viewBox should fit snugly around its content with ~10 SVG-unit margins. Do not pad the viewBox to a fixed 300-tall target.
+
+Instead, set `flex: <vbHeight>` on each view's container div in App.jsx, where `<vbHeight>` is that view's viewBox height. This gives each view a CSS container height proportional to its viewBox height, so both SVGs render at the same CSS scale (same scale factor = min(W/390, H/vbHeight)). With `vectorEffect="non-scaling-stroke"` and CSS px fonts already in place, this ensures all visual sizes match between views.
+
+Current values (update both when content changes):
+| View | viewBox | flex |
+|---|---|---|
+| TopView | `-195 -115 390 230` | 230 |
+| SideView | `-195 -112 390 134` | 134 |
 
 ## Coordinate system
 Both views use `SQUISH = 95/148 ≈ 0.642` on the vertical axis to create the elliptical shape.
 
 **Top view** (`TopView.jsx`): center = zenith, facing direction at top, rotates data not compass.
-- R = 150 SVG units; viewBox = `-195 -135 390 300`
+- R = 150 SVG units; viewBox = `-195 -115 390 230`
 - `r = R * (90 - elev) / 90`
 - `x = -r * sin(az_rot)`, `y = r * cos(az_rot) * SQUISH` where `az_rot = ((az - facing + 180 + 360) % 360)`
 
 **Side view** (`SideView.jsx`): full 360° panoramic; facing direction at center bottom, ±90° = horizon edges, grey zones = behind viewer.
-- R = 80 SVG units; viewBox = `-195 ${-(ry+68)} 390 ${ry+130}` where `ry = R * SQUISH`
+- R = 150 SVG units (matches TopView R so boundary arc width = compass diameter); viewBox = `-195 -112 390 134`
 - `x = d / 90 * R` where `d = (((az - facing + 180 + 360) % 360) - 180)`
 - `y = elev / 90 * R * SQUISH` (negated for SVG: upward = negative y)
 
