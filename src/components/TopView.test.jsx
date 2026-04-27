@@ -69,3 +69,33 @@ describe('TopView — font sizes', () => {
     });
   });
 });
+
+describe('TopView — now-dot', () => {
+  test('no now-dot circle when nowDot is null', () => {
+    const { container } = renderTopView({ nowDot: null });
+    // only the center zenith dot (r=4) should be present
+    const circles = [...container.querySelectorAll('circle')];
+    const nowCircle = circles.find(el => Number(el.getAttribute('r')) === 5);
+    expect(nowCircle).toBeUndefined();
+  });
+
+  test('now-dot circle (r=5) renders when nowDot is provided', () => {
+    const { container } = renderTopView({ nowDot: { az: 180, elev: 45 } });
+    const circles = [...container.querySelectorAll('circle')];
+    const nowCircle = circles.find(el => Number(el.getAttribute('r')) === 5);
+    expect(nowCircle).toBeTruthy();
+    expect(nowCircle.getAttribute('stroke')).toBe('white');
+  });
+});
+
+describe('TopView — rise/set markers', () => {
+  test('rise (↑) and set (↓) arrow markers are rendered for each arc', () => {
+    const { container } = renderTopView();
+    const texts = [...container.querySelectorAll('text')];
+    const up   = texts.filter(el => el.textContent === '↑');
+    const down = texts.filter(el => el.textContent === '↓');
+    // 3 seasonal arcs + 1 today arc = 4 pairs
+    expect(up.length).toBe(4);
+    expect(down.length).toBe(4);
+  });
+});

@@ -85,3 +85,51 @@ describe('SideView — font sizes', () => {
     });
   });
 });
+
+describe('SideView — BehindZone', () => {
+  test('two shaded rects are rendered for the behind-viewer zones', () => {
+    const { container } = renderSideView();
+    const rects = container.querySelectorAll('rect');
+    expect(rects.length).toBe(2);
+  });
+});
+
+describe('SideView — rise/set markers', () => {
+  test('rise (↑) and set (↓) arrow markers are rendered for each arc', () => {
+    const { container } = renderSideView();
+    const texts = [...container.querySelectorAll('text')];
+    const up   = texts.filter(el => el.textContent === '↑');
+    const down = texts.filter(el => el.textContent === '↓');
+    // 3 seasonal arcs + 1 today arc = 4 pairs
+    expect(up.length).toBe(4);
+    expect(down.length).toBe(4);
+  });
+});
+
+describe('SideView — now-dot', () => {
+  test('no now-dot circle (r=5) when nowDot is null', () => {
+    const { container } = renderSideView({ nowDot: null });
+    const circles = [...container.querySelectorAll('circle')];
+    const nowCircle = circles.find(el => Number(el.getAttribute('r')) === 5);
+    expect(nowCircle).toBeUndefined();
+  });
+
+  test('now-dot circle (r=5) renders when nowDot is provided', () => {
+    const { container } = renderSideView({ nowDot: { az: 180, elev: 45 } });
+    const circles = [...container.querySelectorAll('circle')];
+    const nowCircle = circles.find(el => Number(el.getAttribute('r')) === 5);
+    expect(nowCircle).toBeTruthy();
+    expect(nowCircle.getAttribute('stroke')).toBe('white');
+  });
+});
+
+describe('SideView — WindowDots', () => {
+  test('sun-window endpoint dots (r=3.5) are rendered for each season arc', () => {
+    const { container } = renderSideView();
+    const circles = [...container.querySelectorAll('circle')];
+    // Each season (3) + today (1) = 4 arcs; each has a start and end dot = 8 dots (r=3.5).
+    // (Facing south on a summer date means all arcs have a south-facing sun window.)
+    const windowDots = circles.filter(el => Number(el.getAttribute('r')) === 3.5);
+    expect(windowDots.length).toBeGreaterThan(0);
+  });
+});

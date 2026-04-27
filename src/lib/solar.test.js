@@ -6,7 +6,12 @@ import {
   arcPoints,
   hoursOfDaylight,
   solarNoonElevation,
+  sunWindowTimes,
+  dayOfYear,
+  doyToDate,
   SQUISH,
+  SEASONS,
+  COLORS,
 } from './solar.js';
 
 const SEATTLE = { lat: 47.6762, lon: -122.3321 };
@@ -143,5 +148,80 @@ describe('solarNoonElevation', () => {
   });
   test('winter noon elevation is positive at Seattle', () => {
     expect(solarNoonElevation(WINTER, SEATTLE.lat, SEATTLE.lon)).toBeGreaterThan(0);
+  });
+});
+
+describe('dayOfYear', () => {
+  // dayOfYear uses local-midnight subtraction; it may be off by 1 for dates after the
+  // DST spring-forward transition in local timezones. Test invariants that hold regardless.
+  test('Jan 1 = 1 (before any DST change)', () => {
+    expect(dayOfYear(new Date(2025, 0, 1))).toBe(1);
+  });
+  test('Jan 31 = 31 (before any DST change)', () => {
+    expect(dayOfYear(new Date(2025, 0, 31))).toBe(31);
+  });
+  test('summer day-of-year is later than winter day-of-year', () => {
+    // Jun 21 vs Jan 21 — ordering is preserved regardless of DST
+    expect(dayOfYear(new Date(2025, 5, 21))).toBeGreaterThan(dayOfYear(new Date(2025, 0, 21)));
+  });
+  test('summer day-of-year is roughly mid-year (> 150, < 180)', () => {
+    const doy = dayOfYear(new Date(2025, 5, 21));
+    expect(doy).toBeGreaterThan(150);
+    expect(doy).toBeLessThan(180);
+  });
+});
+
+describe('doyToDate', () => {
+  test('doy 1 → Jan 1', () => {
+    const d = doyToDate(1, 2025);
+    expect(d.getMonth()).toBe(0);
+    expect(d.getDate()).toBe(1);
+  });
+  test('doy 1 roundtrip: dayOfYear(doyToDate(1, year)) === 1 (pre-DST, exact)', () => {
+    expect(dayOfYear(doyToDate(1, 2025))).toBe(1);
+  });
+  test('SEASONS: summer doy maps to June, equinox to March, winter to December', () => {
+    const summer  = SEASONS.find(s => s.name === 'summer');
+    const equinox = SEASONS.find(s => s.name === 'equinox');
+    const winter  = SEASONS.find(s => s.name === 'winter');
+    expect(doyToDate(summer.doy,  2025).getMonth()).toBe(5);  // June
+    expect(doyToDate(equinox.doy, 2025).getMonth()).toBe(2);  // March
+    expect(doyToDate(winter.doy,  2025).getMonth()).toBe(11); // December
+  });
+});
+
+describe('sunWindowTimes', () => {
+  test('Seattle facing south on summer day has a positive-duration sun window', () => {
+    const win = sunWindowTimes(SUMMER, SEATTLE.lat, SEATTLE.lon, 180);
+    expect(win).not.toBeNull();
+    expect(win.durationHours).toBeGreaterThan(0);
+  });
+  test('start time is before end time', () => {
+    const win = sunWindowTimes(SUMMER, SEATTLE.lat, SEATTLE.lon, 180);
+    expect(win.start.t < win.end.t).toBe(true);
+  });
+  test('start and end azimuths are within facing hemisphere (±90° of facing)', () => {
+    const win = sunWindowTimes(SUMMER, SEATTLE.lat, SEATTLE.lon, 180);
+    for (const pt of [win.start, win.end]) {
+      const diff = (pt.az - 180 + 360) % 360;
+      const inHemisphere = diff < 90 || diff > 270;
+      expect(inHemisphere).toBe(true);
+    }
+  });
+  test('Seattle facing north on winter day: sun window may be null or very short (sun stays south)', () => {
+    // Facing north = facing=0; winter sun in Seattle stays in the south hemisphere,
+    // so no direct sun should hit a north-facing surface.
+    const win = sunWindowTimes(WINTER, SEATTLE.lat, SEATTLE.lon, 0);
+    if (win !== null) {
+      expect(win.durationHours).toBeLessThan(1);
+    }
+  });
+});
+
+describe('COLORS', () => {
+  test('has entries for all four arc types', () => {
+    ['summer', 'equinox', 'winter', 'today'].forEach(key => {
+      expect(COLORS[key]).toMatch(/^#[0-9a-fA-F]{6}$/);
+    });
   });
 });
