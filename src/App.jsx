@@ -46,23 +46,37 @@ function coordLabel(lat, lon) {
   return `${Math.abs(lat).toFixed(4)}°${lat >= 0 ? "N" : "S"}, ${Math.abs(lon).toFixed(4)}°${lon >= 0 ? "E" : "W"}`;
 }
 
-function Legend({ lat, lon, date }) {
-  const year = date.getFullYear();
-  const rows = [
-    ...SEASONS.map(({ name, doy }) => ({ name, date: doyToDate(doy, year), dashed: false })),
-    { name: "today", date, dashed: true },
-  ];
+function Legend({ sunWindows }) {
+  const names = [...SEASONS.map(({ name }) => name), "today"];
+
+  const fmt = (t) => (t && !isNaN(t) ? t.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "—");
+  const fmtDur = (h) => {
+    const hh = Math.floor(h);
+    const mm = Math.round((h - hh) * 60);
+    return hh > 0 ? `${hh}h ${mm}m` : `${mm}m`;
+  };
 
   return (
     <div className="flex flex-wrap justify-center gap-1.5 mb-2">
-      {rows.map(({ name, date: d, dashed }) => {
+      {names.map((name) => {
         const label = name === "today" ? "Today" : name.charAt(0).toUpperCase() + name.slice(1);
+        const dashed = name === "today";
+        const win = sunWindows[name];
         return (
           <div key={name} className="flex items-center gap-1.5 bg-zinc-900 border border-zinc-800 rounded-full px-2.5 py-0.5">
             <svg width={18} height={8} style={{ flexShrink: 0 }}>
               <line x1={0} y1={4} x2={18} y2={4} stroke={COLORS[name]} strokeWidth={2} strokeDasharray={dashed ? "4,2.5" : "none"} />
             </svg>
             <span style={{ fontSize: 10 }} className="text-zinc-300 font-medium whitespace-nowrap">{label}</span>
+            <div className="w-px h-3 bg-zinc-700" />
+            <span style={{ fontSize: 10 }} className="text-zinc-500 whitespace-nowrap">
+              {win ? `${fmt(win.start.t)} → ${fmt(win.end.t)}` : "—"}
+            </span>
+            {win && (
+              <span style={{ fontSize: 10 }} className="text-zinc-400 font-medium whitespace-nowrap">
+                {fmtDur(win.durationHours)}
+              </span>
+            )}
           </div>
         );
       })}
@@ -76,62 +90,6 @@ function Legend({ lat, lon, date }) {
   );
 }
 
-function SunTable({ sunWindows }) {
-  const rows = [...SEASONS.map(({ name }) => name), "today"];
-
-  const fmt = (t) => (t && !isNaN(t) ? t.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "—");
-  const fmtDur = (h) => {
-    const hh = Math.floor(h);
-    const mm = Math.round((h - hh) * 60);
-    return hh > 0 ? `${hh}h ${mm}m` : `${mm}m`;
-  };
-
-  const th = { fontSize: 9, textTransform: "uppercase", letterSpacing: "0.07em", color: "#71717a", fontWeight: 600, padding: "0 10px 8px 0", textAlign: "left", borderBottom: "1px solid #3f3f46" };
-  const td = { fontSize: 10, color: "#a1a1aa", padding: "6px 10px 6px 0", verticalAlign: "middle", borderBottom: "1px solid #27272a" };
-  const tdLast = { ...td, paddingRight: 0 };
-
-  return (
-    <div className="border border-zinc-800/70 rounded-xl bg-zinc-950/60 p-3 flex-shrink-0" style={{ width: 220 }}>
-      <table style={{ borderCollapse: "collapse", width: "100%", tableLayout: "fixed" }}>
-        <colgroup>
-          <col style={{ width: "30%" }} />
-          <col style={{ width: "23%" }} />
-          <col style={{ width: "23%" }} />
-          <col style={{ width: "24%" }} />
-        </colgroup>
-        <thead>
-          <tr>
-            <th style={th}>Line</th>
-            <th style={th}>Sun In</th>
-            <th style={th}>Sun Out</th>
-            <th style={{ ...th, paddingRight: 0 }}>Duration</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((name) => {
-            const win = sunWindows[name];
-            const label = name === "today" ? "Today" : name.charAt(0).toUpperCase() + name.slice(1);
-            return (
-              <tr key={name}>
-                <td style={td}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <div style={{ width: 8, height: 8, borderRadius: 2, backgroundColor: COLORS[name], flexShrink: 0 }} />
-                    <span style={{ fontSize: 10, color: "#d4d4d8", fontWeight: 500 }}>{label}</span>
-                  </div>
-                </td>
-                <td style={td}>{win ? fmt(win.start.t) : "—"}</td>
-                <td style={td}>{win ? fmt(win.end.t) : "—"}</td>
-                <td style={tdLast}>{win ? fmtDur(win.durationHours) : "—"}</td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-// Crosshair icon for "locate me" button
 function CrosshairIcon() {
   return (
     <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
@@ -241,150 +199,143 @@ export default function App() {
   }
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden text-zinc-100 px-3 pt-2.5 pb-2 box-border">
+    <div className="min-h-screen flex flex-col text-zinc-100" style={{ background: "linear-gradient(180deg, #0f0f14 0%, #1a1a24 100%)" }}>
 
-      {/* Controls card */}
-      <div className="flex justify-center mb-2">
-        <div
-          className="flex items-center gap-3 bg-zinc-900 border border-zinc-800 rounded-2xl px-5 py-2.5 flex-wrap justify-center"
-          style={{ boxShadow: "0 1px 0 0 rgba(255,255,255,0.04) inset" }}
-        >
-            <h1 className="text-xs font-semibold tracking-[0.12em] text-zinc-400 uppercase">
-              Solar Path
-            </h1>
-            <div className="w-px h-3.5 bg-zinc-700" />
+      {/* Sticky nav */}
+      <div
+        className="sticky top-0 z-50 w-full"
+        style={{
+          background: "linear-gradient(180deg, #1f1f27 0%, #13131a 100%)",
+          borderBottom: "1px solid rgba(255,255,255,0.06)",
+          boxShadow: "0 2px 12px rgba(0,0,0,0.5)",
+        }}
+      >
+      <div className="relative flex items-center gap-3 px-5 py-2.5 flex-wrap justify-center">
+          <h1
+            className="text-zinc-200 uppercase"
+            style={{ fontFamily: "'Orbitron', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.2em" }}
+          >
+            Solar Path
+          </h1>
+          <div className="w-px h-3.5 bg-zinc-700" />
 
-            {/* Location — search mode */}
-            {!showCoords && (
-              <div className="relative">
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => setShowCoords(true)}
-                    title="Switch to coordinate entry"
-                    className="flex-shrink-0 text-[9px] uppercase tracking-wide font-medium px-2 h-7 rounded-md border border-zinc-700 bg-zinc-800 text-zinc-500 hover:text-zinc-300 hover:border-zinc-600 transition-colors"
-                  >
-                    lat/lon
-                  </button>
-                  <Input
-                    type="text"
-                    placeholder="Search city or place…"
-                    value={locationQuery}
-                    onChange={(e) => handleLocationInput(e.target.value)}
-                    onFocus={(e) => { if (locationQuery === SEATTLE.name || locationQuery === locationName) e.target.select(); }}
-                    onBlur={() => setTimeout(() => setSearchResults([]), 150)}
-                    onKeyDown={(e) => { if (e.key === "Enter" && searchResults.length > 0) selectResult(searchResults[0]); }}
-                    className="w-48 text-zinc-200"
-                  />
-                  <button
-                    onClick={locateMe}
-                    title="Use my location"
-                    className="flex items-center justify-center w-7 h-7 rounded-md border border-zinc-700 bg-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-600 transition-colors flex-shrink-0"
-                  >
-                    <CrosshairIcon />
-                  </button>
-                </div>
-                {searchResults.length > 0 && (
-                  <div className="absolute top-full left-0 mt-1 z-50 bg-zinc-800 border border-zinc-700 rounded-xl shadow-xl overflow-hidden min-w-[260px]">
-                    {searchResults.map((r) => {
-                      const parts = r.display_name.split(", ");
-                      return (
-                        <button
-                          key={r.place_id}
-                          onMouseDown={() => selectResult(r)}
-                          className="w-full text-left px-3 py-2 hover:bg-zinc-700 transition-colors border-b border-zinc-700/50 last:border-0"
-                        >
-                          <div style={{ fontSize: 12 }} className="text-zinc-200 font-medium">{parts[0]}</div>
-                          <div style={{ fontSize: 10 }} className="text-zinc-500">{parts.slice(1, 3).join(", ")}</div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Location — lat/lon mode */}
-            {showCoords && (
+          {/* Location — search mode */}
+          {!showCoords && (
+            <div className="relative">
               <div className="flex items-center gap-1">
                 <button
-                  onClick={() => setShowCoords(false)}
-                  title="Switch to location search"
-                  className="flex-shrink-0 text-[9px] uppercase tracking-wide font-medium px-2 h-7 rounded-md border border-emerald-700 bg-emerald-950 text-emerald-400 hover:bg-emerald-900 transition-colors"
+                  onClick={() => setShowCoords(true)}
+                  title="Switch to coordinate entry"
+                  className="flex-shrink-0 text-[9px] uppercase tracking-wide font-medium px-2 h-7 rounded-md border border-zinc-700 bg-zinc-800 text-zinc-500 hover:text-zinc-300 hover:border-zinc-600 transition-colors"
                 >
-                  search
+                  lat/lon
                 </button>
-                <label className="flex items-center gap-1 text-xs text-zinc-500">
-                  Lat
-                  <Input
-                    type="number"
-                    min={-90} max={90} step={0.0001}
-                    value={latInput}
-                    onChange={(e) => setLatInput(e.target.value)}
-                    onBlur={commitLat}
-                    className="w-[80px]"
-                  />
-                </label>
-                <label className="flex items-center gap-1 text-xs text-zinc-500">
-                  Lon
-                  <Input
-                    type="number"
-                    min={-180} max={180} step={0.0001}
-                    value={lonInput}
-                    onChange={(e) => setLonInput(e.target.value)}
-                    onBlur={commitLon}
-                    className="w-[80px]"
-                  />
-                </label>
-              </div>
-            )}
-
-            <label className="flex items-center gap-1.5 text-xs text-zinc-500">
-              Date
-              <Input
-                type="date"
-                value={toDateInput(selectedDate)}
-                onChange={(e) => setSelectedDate(parseDateInput(e.target.value))}
-                className="w-auto"
-              />
-            </label>
-
-            <div className="w-px h-5 bg-zinc-700 mx-0.5" />
-
-            <div className="flex items-center gap-2.5">
-              <span className="text-xs text-zinc-500">Facing</span>
-              <div className="flex flex-col items-center gap-0.5">
-                <Slider
-                  min={0} max={360} step={1}
-                  value={[facing]}
-                  onValueChange={([v]) => {
-                    const snap = FACINGS.find(({ deg }) => Math.min(Math.abs(v - deg), 360 - Math.abs(v - deg)) <= 8);
-                    setFacing(snap ? snap.deg : v % 360);
-                  }}
-                  className="w-32"
+                <Input
+                  type="text"
+                  placeholder="Search city or place…"
+                  value={locationQuery}
+                  onChange={(e) => handleLocationInput(e.target.value)}
+                  onFocus={(e) => { if (locationQuery === locationName) e.target.select(); }}
+                  onBlur={() => setTimeout(() => setSearchResults([]), 150)}
+                  onKeyDown={(e) => { if (e.key === "Enter" && searchResults.length > 0) selectResult(searchResults[0]); }}
+                  className="w-48 text-zinc-200"
                 />
-                <div className="flex justify-between w-32 text-zinc-600" style={{ fontSize: 9 }}>
-                  <span>N</span><span>E</span><span>S</span><span>W</span><span>N</span>
-                </div>
+                <button
+                  onClick={locateMe}
+                  title="Use my location"
+                  className="flex items-center justify-center w-7 h-7 rounded-md border border-zinc-700 bg-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-600 transition-colors flex-shrink-0"
+                >
+                  <CrosshairIcon />
+                </button>
               </div>
-              <span className="text-xs font-semibold text-emerald-400 min-w-[32px]">{facing}°</span>
+              {searchResults.length > 0 && (
+                <div className="absolute top-full left-0 mt-1 z-50 bg-zinc-800 border border-zinc-700 rounded-xl shadow-xl overflow-hidden min-w-[260px]">
+                  {searchResults.map((r) => {
+                    const parts = r.display_name.split(", ");
+                    return (
+                      <button
+                        key={r.place_id}
+                        onMouseDown={() => selectResult(r)}
+                        className="w-full text-left px-3 py-2 hover:bg-zinc-700 transition-colors border-b border-zinc-700/50 last:border-0"
+                      >
+                        <div style={{ fontSize: 12 }} className="text-zinc-200 font-medium">{parts[0]}</div>
+                        <div style={{ fontSize: 10 }} className="text-zinc-500">{parts.slice(1, 3).join(", ")}</div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
+          )}
 
-        </div>
+          {/* Location — lat/lon mode */}
+          {showCoords && (
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setShowCoords(false)}
+                title="Switch to location search"
+                className="flex-shrink-0 text-[9px] uppercase tracking-wide font-medium px-2 h-7 rounded-md border border-emerald-700 bg-emerald-950 text-emerald-400 hover:bg-emerald-900 transition-colors"
+              >
+                search
+              </button>
+              <label className="flex items-center gap-1 text-xs text-zinc-500">
+                Lat
+                <Input type="number" min={-90} max={90} step={0.0001} value={latInput}
+                  onChange={(e) => setLatInput(e.target.value)} onBlur={commitLat} className="w-[80px]" />
+              </label>
+              <label className="flex items-center gap-1 text-xs text-zinc-500">
+                Lon
+                <Input type="number" min={-180} max={180} step={0.0001} value={lonInput}
+                  onChange={(e) => setLonInput(e.target.value)} onBlur={commitLon} className="w-[80px]" />
+              </label>
+            </div>
+          )}
+
+          <label className="flex items-center gap-1.5 text-xs text-zinc-500">
+            Date
+            <Input type="date" value={toDateInput(selectedDate)}
+              onChange={(e) => setSelectedDate(parseDateInput(e.target.value))} className="w-auto" />
+          </label>
+
+          <div className="w-px h-5 bg-zinc-700 mx-0.5" />
+
+          <div className="flex items-center gap-2.5">
+            <span className="text-xs text-zinc-500">Facing</span>
+            <div className="flex flex-col items-center gap-0.5">
+              <Slider min={0} max={360} step={1} value={[facing]}
+                onValueChange={([v]) => {
+                  const snap = FACINGS.find(({ deg }) => Math.min(Math.abs(v - deg), 360 - Math.abs(v - deg)) <= 8);
+                  setFacing(snap ? snap.deg : v % 360);
+                }}
+                className="w-32"
+              />
+              <div className="flex justify-between w-32 text-zinc-600" style={{ fontSize: 9 }}>
+                <span>N</span><span>E</span><span>S</span><span>W</span><span>N</span>
+              </div>
+            </div>
+            <span className="text-xs font-semibold text-emerald-400 min-w-[32px]">{facing}°</span>
+          </div>
+
       </div>
 
-      <Legend lat={lat} lon={lon} date={selectedDate} />
+      <div className="relative px-3 pb-2 pt-1">
+        <Legend sunWindows={sunWindows} />
+      </div>
 
-      {/* Diagram containers */}
-      <div className="flex-1 min-h-0 flex flex-row gap-1.5">
-        <div className="flex-1 min-w-0 flex flex-col gap-1.5">
-          <div style={{ flex: 230, minHeight: 0 }} className="border border-zinc-800/70 rounded-xl overflow-hidden bg-zinc-950/60">
+      </div>
+
+      {/* Page content */}
+      <div className="relative z-10 px-3 pt-1.5 pb-4 flex flex-col">
+
+        {/* Diagram containers */}
+        <div className="flex flex-col md:flex-row gap-1.5">
+          <div className="relative w-full md:flex-1 aspect-[390/230] border border-zinc-800/50 rounded-xl overflow-hidden bg-zinc-950/40">
             <TopView lat={lat} lon={lon} date={selectedDate} nowDot={nowDot} facing={facing} sunWindows={sunWindows} />
           </div>
-          <div style={{ flex: 134, minHeight: 0 }} className="border border-zinc-800/70 rounded-xl overflow-hidden bg-zinc-950/60">
+          <div className="relative w-full md:flex-1 aspect-[390/134] border border-zinc-800/50 rounded-xl overflow-hidden bg-zinc-950/40">
             <SideView lat={lat} lon={lon} date={selectedDate} nowDot={nowDot} facing={facing} sunWindows={sunWindows} />
           </div>
         </div>
-        <SunTable sunWindows={sunWindows} />
       </div>
 
     </div>

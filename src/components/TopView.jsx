@@ -1,5 +1,6 @@
-import { useState } from "react";
 import { arcPoints, topViewCoords, compassLabel, doyToDate, SQUISH, COLORS, SEASONS } from "../lib/solar.js";
+import SunSymbol from "./SunSymbol.jsx";
+import WindowDots from "./WindowDots.jsx";
 
 const R = 150;
 
@@ -15,28 +16,12 @@ function GradientArc({ date, lat, lon, facing, color }) {
     const tNorm = maxT > 0 ? t / maxT : 0;
     return (
       <line key={i} x1={x1} y1={y1} x2={x2} y2={y2}
-        stroke={color} strokeOpacity={0.15 + 0.85 * t} strokeWidth={0.5 + 2.0 * tNorm}
+        stroke={color} strokeOpacity={0.15 + 0.85 * t} strokeWidth={0.5 + 3.5 * tNorm}
         vectorEffect="non-scaling-stroke" />
     );
   });
 }
 
-function SunSymbol({ cx, cy }) {
-  return (
-    <g>
-      {Array.from({ length: 8 }, (_, i) => {
-        const a = (i * Math.PI) / 4;
-        return (
-          <line key={i}
-            x1={cx + 4.5 * Math.sin(a)} y1={cy - 4.5 * Math.cos(a)}
-            x2={cx + 7.5 * Math.sin(a)} y2={cy - 7.5 * Math.cos(a)}
-            stroke="#FFBB00" strokeWidth={1.5} vectorEffect="non-scaling-stroke" />
-        );
-      })}
-      <circle cx={cx} cy={cy} r={3.5} fill="#FFBB00" stroke="white" strokeWidth={1} vectorEffect="non-scaling-stroke" />
-    </g>
-  );
-}
 
 function ElevationRings() {
   return [30, 60].map((elev) => {
@@ -80,41 +65,6 @@ function CardinalLines({ facing }) {
 }
 
 
-function TopWindowDots({ win, facing, color }) {
-  const [hovered, setHovered] = useState(null);
-  if (!win) return null;
-
-  const { start, end, durationHours } = win;
-  const fmt = (t) => t.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
-  const durH = Math.floor(durationHours);
-  const durM = Math.round((durationHours - durH) * 60);
-  const durStr = durH > 0 ? `${durH}h ${durM}m` : `${durM}m`;
-
-  const Dot = ({ id, az, elev, label, sublabel }) => {
-    const { x, y } = topViewCoords(az, elev, R, facing);
-    const anchor = x < -2 ? "end" : x > 2 ? "start" : "middle";
-    const labelX = x < -2 ? x - 6 : x > 2 ? x + 6 : x;
-    return (
-      <g onMouseEnter={() => setHovered(id)} onMouseLeave={() => setHovered(null)}>
-        <circle cx={x} cy={y} r={10} fill="transparent" style={{ cursor: "default" }} />
-        <circle cx={x} cy={y} r={3.5} fill={color} stroke="white" strokeWidth={1} vectorEffect="non-scaling-stroke" />
-        {hovered === id && (
-          <>
-            <text x={labelX} y={y - 5} textAnchor={anchor} style={{ fontSize: "7px" }} fill="white">{label}</text>
-            {sublabel && <text x={labelX} y={y - 13} textAnchor={anchor} style={{ fontSize: "7px" }} fill="#a1a1aa">{sublabel}</text>}
-          </>
-        )}
-      </g>
-    );
-  };
-
-  return (
-    <>
-      <Dot id="start" az={start.az} elev={start.elev} label={fmt(start.t)} sublabel={null} />
-      <Dot id="end"   az={end.az}   elev={end.elev}   label={fmt(end.t)}   sublabel={durStr} />
-    </>
-  );
-}
 
 export default function TopView({ lat, lon, date, nowDot, facing, sunWindows }) {
   const year = date.getFullYear();
@@ -137,14 +87,14 @@ export default function TopView({ lat, lon, date, nowDot, facing, sunWindows }) 
           return (
             <g key={name}>
               <GradientArc date={d} lat={lat} lon={lon} facing={facing} color={COLORS[name]} />
-              <TopWindowDots win={sunWindows[name]} facing={facing} color={COLORS[name]} />
+              <WindowDots win={sunWindows[name]} project={(az, elev) => topViewCoords(az, elev, R, facing)} color={COLORS[name]} />
             </g>
           );
         })}
 
         <g>
           <GradientArc date={date} lat={lat} lon={lon} facing={facing} color={COLORS.today} />
-          <TopWindowDots win={sunWindows.today} facing={facing} color={COLORS.today} />
+          <WindowDots win={sunWindows.today} project={(az, elev) => topViewCoords(az, elev, R, facing)} color={COLORS.today} />
         </g>
 
         {nowDot && (() => {
@@ -152,7 +102,6 @@ export default function TopView({ lat, lon, date, nowDot, facing, sunWindows }) 
           return <SunSymbol cx={x} cy={y} />;
         })()}
 
-        <circle cx={0} cy={0} r={4} fill="#e4e4e7" />
       </svg>
       </div>
     </div>

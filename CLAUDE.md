@@ -29,10 +29,12 @@ npm run preview    # preview production build locally; Ctrl+C to stop
 ## View rendering requirements
 
 ### Layout
-- The full app fits in one page — no scrollbars (`height: 100vh; overflow: hidden` on root)
-- Each view SVG is centered horizontally and vertically within its container
-- Pattern: `position: relative; flex: 1; minHeight: 0` wrapper → child SVG `position: absolute; width: 100%; height: 100%`
+- The app is fully responsive — root uses `min-h-screen flex flex-col` (no `overflow: hidden`), scrolling allowed on small screens
+- Diagram section uses `flex-col md:flex-row`: stacked on mobile, side-by-side on tablet/desktop (768px+)
+- Each SVG container uses Tailwind classes `relative w-full aspect-[<vbW>/<vbH>]` — height is derived from width automatically
+- Child SVG uses `position: absolute; width: 100%; height: 100%`
 - SVG uses default `preserveAspectRatio="xMidYMid meet"` so content is letterboxed and centered
+- SunTable uses `w-full md:w-[220px]` — full width on mobile, fixed sidebar on desktop
 
 ### Visual consistency between views (critical)
 The two views have different content proportions, so the same SVG user-unit value renders at different CSS pixel sizes in each. **Never rely on SVG unit scaling to match sizes between views.** Use fixed CSS pixels throughout:
@@ -51,16 +53,16 @@ The two views have different content proportions, so the same SVG user-unit valu
 | Elevation ring labels | 7 px font |
 | Now-dot | 5 px radius, 1.5 px white stroke |
 
-### Tight viewBoxes + proportional flex
-Each viewBox should fit snugly around its content with ~10 SVG-unit margins. Do not pad the viewBox to a fixed 300-tall target.
+### Tight viewBoxes + aspect-ratio containers
+Each viewBox should fit snugly around its content with ~10 SVG-unit margins.
 
-Instead, set `flex: <vbHeight>` on each view's container div in App.jsx, where `<vbHeight>` is that view's viewBox height. This gives each view a CSS container height proportional to its viewBox height, so both SVGs render at the same CSS scale (same scale factor = min(W/390, H/vbHeight)). With `vectorEffect="non-scaling-stroke"` and CSS px fonts already in place, this ensures all visual sizes match between views.
+The SVG container in App.jsx uses `style={{ aspectRatio: "<vbW>/<vbH>" }}` matching the viewBox dimensions. This means both views are always full-width of their column and scale identically — the scale factor is `containerWidth / vbW`, which is the same for both since they share the same column width and both have `vbW = 390`. With `vectorEffect="non-scaling-stroke"` and CSS px fonts, visual sizes match perfectly between views at any screen width.
 
-Current values (update both when content changes):
-| View | viewBox | flex |
+Current values (update `aspect-[...]` class in App.jsx when viewBox changes):
+| View | viewBox | Tailwind class |
 |---|---|---|
-| TopView | `-195 -115 390 230` | 230 |
-| SideView | `-195 -112 390 134` | 134 |
+| TopView | `-195 -115 390 230` | `aspect-[390/230]` |
+| SideView | `-195 -112 390 134` | `aspect-[390/134]` |
 
 ## Coordinate system
 

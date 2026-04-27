@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-04-27
+
+### Added
+- Orbitron font for "Solar Path" title in sticky navbar
+
+### Changed
+- App layout: controls card replaced with sticky navbar; background gradient applied to root
+- Sun data table removed as a separate side panel; Sun In / Sun Out / Duration now shown inline within each legend pill
+- Legend now accepts `sunWindows` prop directly instead of recomputing from lat/lon/date
+- Test suite updated for v0.4.0 features: gradient arc `<line>` elements, `sunWindows` prop, SunSymbol now-dot (r=3.5 + 8 rays)
+- Tests added for TopView WindowDots and explicit null-window cases in both views
+
 ## [0.4.0] - 2026-04-27
 
 ### Added
