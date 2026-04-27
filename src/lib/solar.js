@@ -49,6 +49,30 @@ export function arcPoints(date, lat, lon, n = 200) {
   return points;
 }
 
+// Window of direct sun on a vertical surface facing `facing` degrees.
+// Returns { start: {t, az, elev}, end: {t, az, elev}, durationHours } or null.
+export function sunWindowTimes(date, lat, lon, facing, n = 1440) {
+  const { sunrise, sunset } = SunCalc.getTimes(date, lat, lon);
+  if (!sunrise || isNaN(sunrise)) return null;
+
+  let startEntry = null, endEntry = null;
+  for (let i = 0; i < n; i++) {
+    const t = new Date(sunrise.getTime() + (i / (n - 1)) * (sunset - sunrise));
+    const pos = SunCalc.getPosition(t, lat, lon);
+    if (pos.altitude < 0) continue;
+    const az = ((pos.azimuth * 180 / Math.PI) + 180 + 360) % 360;
+    const diff = (az - facing + 360) % 360;
+    if (diff < 90 || diff > 270) {
+      const entry = { t, az, elev: pos.altitude * 180 / Math.PI };
+      if (!startEntry) startEntry = entry;
+      endEntry = entry;
+    }
+  }
+
+  if (!startEntry) return null;
+  return { start: startEntry, end: endEntry, durationHours: (endEntry.t - startEntry.t) / 3600000 };
+}
+
 // Hours of daylight for a given date and location.
 export function hoursOfDaylight(date, lat, lon) {
   const { sunrise, sunset } = SunCalc.getTimes(date, lat, lon);

@@ -1,4 +1,5 @@
-import { arcPoints, sideViewCoords, compassLabel, doyToDate, SQUISH, COLORS, SEASONS } from "../lib/solar.js";
+import { useState } from "react";
+import { arcPoints, sideViewCoords, compassLabel, doyToDate, SQUISH, COLORS, SEASONS, sunWindowTimes } from "../lib/solar.js";
 
 const R = 150;
 
@@ -52,26 +53,19 @@ function RiseSetMarkers({ date, lat, lon, color, facing }) {
 
   return (
     <>
-      <text x={r.x} y={-r.y} textAnchor="middle" dominantBaseline="middle" style={{ fontSize: "10px" }} fill={color}>▲</text>
-      <text x={s.x} y={-s.y} textAnchor="middle" dominantBaseline="middle" style={{ fontSize: "10px" }} fill={color}>▼</text>
+      <text x={r.x} y={-r.y} textAnchor="middle" dominantBaseline="middle" style={{ fontSize: "10px" }} fill={color}>↑</text>
+      <text x={s.x} y={-s.y} textAnchor="middle" dominantBaseline="middle" style={{ fontSize: "10px" }} fill={color}>↓</text>
     </>
   );
 }
 
-function ElevationArcs() {
-  return [30, 60].map((elev) => {
-    const ry = (elev / 90) * R * SQUISH;
-    const pts = [];
-    for (let i = 0; i <= 100; i++) {
-      const t = (i / 100) * Math.PI;
-      const x = R * Math.cos(Math.PI - t);
-      const y = ry * Math.sin(t);
-      pts.push(`${x},${-y}`);
-    }
+function ElevationLines() {
+  return [30, 60, 90].map((elev) => {
+    const y = -(elev / 90) * R * SQUISH;
     return (
       <g key={elev}>
-        <polyline points={pts.join(" ")} fill="none" stroke="#888" strokeWidth={0.3} strokeDasharray="3,3" opacity={0.5} vectorEffect="non-scaling-stroke" />
-        <text x={4} y={-(ry + 2)} style={{ fontSize: "7px" }} fill="#888">{elev}°</text>
+        <line x1={-R} y1={y} x2={R} y2={y} stroke="#555" strokeWidth={0.3} strokeDasharray="3,3" opacity={0.6} vectorEffect="non-scaling-stroke" />
+        <text x={-(R + 3)} y={y + 3} textAnchor="end" style={{ fontSize: "7px" }} fill="#71717a">{elev}°</text>
       </g>
     );
   });
@@ -81,33 +75,25 @@ function Axes({ facing }) {
   const ry = R * SQUISH;
   return (
     <>
-      <line x1={-2 * R} y1={0} x2={2 * R} y2={0} stroke="#888" strokeWidth={0.5} opacity={0.6} vectorEffect="non-scaling-stroke" />
-      <line x1={0} y1={0} x2={0} y2={-ry} stroke="#888" strokeWidth={0.3} opacity={0.4} vectorEffect="non-scaling-stroke" />
-      <line x1={0} y1={0} x2={-R * 0.5} y2={-ry * 0.5} stroke="#888" strokeWidth={0.3} strokeDasharray="3,3" opacity={0.4} vectorEffect="non-scaling-stroke" />
-      <line x1={0} y1={0} x2={ R * 0.5} y2={-ry * 0.5} stroke="#888" strokeWidth={0.3} strokeDasharray="3,3" opacity={0.4} vectorEffect="non-scaling-stroke" />
-      <text x={-(R + 9)}     y={4} textAnchor="middle" style={{ fontSize: "9px" }} fill="#555" fontWeight="bold">{compassLabel(facing - 90)}</text>
-      <text x={ R + 9}       y={4} textAnchor="middle" style={{ fontSize: "9px" }} fill="#555" fontWeight="bold">{compassLabel(facing + 90)}</text>
-      <text x={0}            y={12} textAnchor="middle" style={{ fontSize: "9px" }} fill="#555" fontWeight="bold">{compassLabel(facing)}</text>
-      <text x={-180} y={4} textAnchor="middle" style={{ fontSize: "8px" }} fill="#aaa">{compassLabel(facing + 180)}</text>
-      <text x={ 180} y={4} textAnchor="middle" style={{ fontSize: "8px" }} fill="#aaa">{compassLabel(facing + 180)}</text>
-      <text x={4} y={-(ry + 5)} style={{ fontSize: "7px" }} fill="#777">zenith</text>
+      <line x1={-2 * R} y1={0} x2={2 * R} y2={0} stroke="#555" strokeWidth={0.5} opacity={0.7} vectorEffect="non-scaling-stroke" />
+      <line x1={0} y1={0} x2={0} y2={-ry} stroke="#555" strokeWidth={0.3} opacity={0.5} vectorEffect="non-scaling-stroke" />
+      <text x={-(R + 9)} y={4} textAnchor="middle" style={{ fontSize: "9px" }} fill="#a1a1aa" fontWeight="bold">{compassLabel(facing - 90)}</text>
+      <text x={ R + 9}   y={4} textAnchor="middle" style={{ fontSize: "9px" }} fill="#a1a1aa" fontWeight="bold">{compassLabel(facing + 90)}</text>
+      <text x={0}        y={12} textAnchor="middle" style={{ fontSize: "9px" }} fill="#a1a1aa" fontWeight="bold">{compassLabel(facing)}</text>
+      <text x={-180} y={4} textAnchor="middle" style={{ fontSize: "8px" }} fill="#52525b">{compassLabel(facing + 180)}</text>
+      <text x={ 180} y={4} textAnchor="middle" style={{ fontSize: "8px" }} fill="#52525b">{compassLabel(facing + 180)}</text>
     </>
   );
 }
 
-// Blue semi-ellipse marks the ±90° visible zone.
-function BoundaryArc() {
-  const pts = [];
-  for (let i = 0; i <= 100; i++) {
-    const t = (i / 100) * Math.PI;
-    const x = R * Math.cos(Math.PI - t);
-    const y = R * SQUISH * Math.sin(t);
-    pts.push(`${x},${-y}`);
-  }
+// Vertical lines mark the ±90° facing-hemisphere boundary.
+function BoundaryLines() {
+  const ry = R * SQUISH;
   return (
     <>
-      <polyline points={pts.join(" ")} fill="none" stroke="steelblue" strokeWidth={1} opacity={0.3} vectorEffect="non-scaling-stroke" />
-      <line x1={-R} y1={0} x2={R} y2={0} stroke="steelblue" strokeWidth={1} opacity={0.3} vectorEffect="non-scaling-stroke" />
+      <line x1={-R} y1={0} x2={-R} y2={-ry} stroke="#4a9eff" strokeWidth={1} opacity={0.2} vectorEffect="non-scaling-stroke" />
+      <line x1={ R} y1={0} x2={ R} y2={-ry} stroke="#4a9eff" strokeWidth={1} opacity={0.2} vectorEffect="non-scaling-stroke" />
+      <line x1={-R} y1={0} x2={ R} y2={0}   stroke="#4a9eff" strokeWidth={1} opacity={0.2} vectorEffect="non-scaling-stroke" />
     </>
   );
 }
@@ -117,27 +103,64 @@ function BehindZone() {
   const ry = R * SQUISH;
   return (
     <>
-      <rect x={-2 * R} y={-ry} width={R} height={ry} fill="#f0f0f0" />
-      <rect x={R}      y={-ry} width={R} height={ry} fill="#f0f0f0" />
+      <rect x={-2 * R} y={-ry} width={R} height={ry} fill="#18181b" />
+      <rect x={R}      y={-ry} width={R} height={ry} fill="#18181b" />
+    </>
+  );
+}
+
+function WindowDots({ date, lat, lon, facing, color }) {
+  const [hovered, setHovered] = useState(null);
+  const win = sunWindowTimes(date, lat, lon, facing);
+  if (!win) return null;
+
+  const { start, end, durationHours } = win;
+  const fmt = (t) => t.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  const durH = Math.floor(durationHours);
+  const durM = Math.round((durationHours - durH) * 60);
+  const durStr = durH > 0 ? `${durH}h ${durM}m` : `${durM}m`;
+
+  const Dot = ({ id, az, elev, label, sublabel }) => {
+    const { x, y } = sideViewCoords(az, elev, R, facing);
+    const cy = -y;
+    const anchor = x < 0 ? "end" : x > 0 ? "start" : "middle";
+    const labelX = x < 0 ? x - 6 : x > 0 ? x + 6 : x;
+    return (
+      <g onMouseEnter={() => setHovered(id)} onMouseLeave={() => setHovered(null)}>
+        <circle cx={x} cy={cy} r={10} fill="transparent" style={{ cursor: "default" }} />
+        <circle cx={x} cy={cy} r={3.5} fill={color} stroke="white" strokeWidth={1} vectorEffect="non-scaling-stroke" />
+        {hovered === id && (
+          <>
+            <text x={labelX} y={cy - 5} textAnchor={anchor} style={{ fontSize: "7px" }} fill="white">{label}</text>
+            {sublabel && <text x={labelX} y={cy - 13} textAnchor={anchor} style={{ fontSize: "7px" }} fill="#a1a1aa">{sublabel}</text>}
+          </>
+        )}
+      </g>
+    );
+  };
+
+  return (
+    <>
+      <Dot id="start" az={start.az} elev={start.elev} label={fmt(start.t)} sublabel={null} />
+      <Dot id="end"   az={end.az}   elev={end.elev}   label={fmt(end.t)}   sublabel={durStr} />
     </>
   );
 }
 
 export default function SideView({ lat, lon, date, nowDot, facing }) {
   const year = date.getFullYear();
-  const ry = R * SQUISH;
   const viewBox = "-195 -112 390 134";
 
   return (
-    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      <div style={{ textAlign: "center", fontSize: 12, color: "#555", padding: "2px 0" }}>
-        side view (facing {compassLabel(facing)})
+    <div style={{ height: "100%", position: "relative" }}>
+      <div style={{ position: "absolute", top: 5, left: 8, zIndex: 10, fontSize: 9, color: "#52525b", fontFamily: "Inter, system-ui, sans-serif", fontWeight: 500, letterSpacing: "0.05em", textTransform: "uppercase", pointerEvents: "none" }}>
+        Side View · Facing {compassLabel(facing)}
       </div>
-      <div style={{ flex: 1, minHeight: 0, position: "relative" }}>
+      <div style={{ position: "absolute", inset: 0 }}>
       <svg viewBox={viewBox} style={{ position: "absolute", width: "100%", height: "100%" }}>
         <BehindZone />
-        <BoundaryArc />
-        <ElevationArcs />
+        <BoundaryLines />
+        <ElevationLines />
         <Axes facing={facing} />
 
         {SEASONS.map(({ name, doy }) => {
@@ -146,6 +169,7 @@ export default function SideView({ lat, lon, date, nowDot, facing }) {
             <g key={name}>
               <SunArc date={d} lat={lat} lon={lon} color={COLORS[name]} dashed={false} facing={facing} />
               <RiseSetMarkers date={d} lat={lat} lon={lon} color={COLORS[name]} facing={facing} />
+              <WindowDots date={d} lat={lat} lon={lon} facing={facing} color={COLORS[name]} />
             </g>
           );
         })}
@@ -153,6 +177,7 @@ export default function SideView({ lat, lon, date, nowDot, facing }) {
         <g>
           <SunArc date={date} lat={lat} lon={lon} color={COLORS.today} dashed={true} facing={facing} />
           <RiseSetMarkers date={date} lat={lat} lon={lon} color={COLORS.today} facing={facing} />
+          <WindowDots date={date} lat={lat} lon={lon} facing={facing} color={COLORS.today} />
         </g>
 
         {nowDot && (() => {
@@ -160,7 +185,7 @@ export default function SideView({ lat, lon, date, nowDot, facing }) {
           return <circle cx={x} cy={-y} r={5} fill={COLORS.today} stroke="white" strokeWidth={1.5} />;
         })()}
 
-        <circle cx={0} cy={0} r={4} fill="black" />
+        <circle cx={0} cy={0} r={4} fill="#e4e4e7" />
       </svg>
       </div>
     </div>

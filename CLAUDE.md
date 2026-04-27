@@ -1,8 +1,8 @@
-# Sun Path Visualizer — Claude Context
+# Solar Path Visualizer — Claude Context
 
 ## Project summary
 Single-page React + Vite app that renders dual elliptical sun path diagrams in SVG.
-Deployed to GitHub Pages. No external dependencies beyond React and Vite themselves.
+Deployed to GitHub Pages. Uses Tailwind CSS v4, shadcn-style UI components (Radix UI), and SunCalc.
 
 ## Repo
 https://github.com/brio50/solarpath.git
@@ -11,14 +11,19 @@ https://github.com/brio50/solarpath.git
 - `src/lib/solar.js` — all solar geometry math (pure functions, no React)
 - `src/components/TopView.jsx` — top-down SVG diagram (azimuth/compass view)
 - `src/components/SideView.jsx` — side elevation SVG diagram (facing south)
-- `src/App.jsx` — controls (lat, date picker), now-dot timer, legend, layout
+- `src/App.jsx` — controls, location search, now-dot timer, legend, layout
+- `src/components/ui/input.jsx` — shadcn-style dark Input component
+- `src/components/ui/slider.jsx` — Radix UI slider with emerald theme
+- `src/lib/utils.js` — `cn()` helper (clsx + tailwind-merge)
 
 ## Dev workflow
+Run these yourself in a terminal — never ask Claude to run `npm run dev`.
+
 ```bash
 npm install
-npm run dev        # localhost:5173
-npm run build      # outputs to dist/
-npm run preview    # preview production build
+npm run dev        # localhost:5173, hot reload; Ctrl+C to stop
+npm run build      # production build → dist/
+npm run preview    # preview production build locally; Ctrl+C to stop
 ```
 
 ## View rendering requirements
@@ -92,8 +97,15 @@ Approximates solar noon at 12:00 local time (no timezone/longitude correction).
 | Winter  | #378ADD | 355 (~Dec 21) |
 | Today   | #1D9E75 | calculated from selected date |
 
-## Reference location
-Seattle — `SEATTLE = { lat: 47.6762, lon: -122.3321 }` default in `App.jsx`. Lat and lon are both user-editable inputs. Lon is stored in state but not yet used in solar calculations (geometry only needs lat).
+## Location input (App.jsx)
+Default is `SEATTLE = { lat: 47.6762, lon: -122.3321, name: "Seattle, Washington" }`.
+
+Users can set location three ways:
+1. **Search** — Nominatim (OpenStreetMap) geocoding, debounced 400 ms, returns display name + lat/lon
+2. **Geolocate** — `navigator.geolocation.getCurrentPosition`, sets "Current location"
+3. **Direct coords** — collapsible lat/lon number inputs toggled by the `lat/lon` button left of the search field
+
+`locationName` state drives the header badge; `commitLat`/`commitLon` update it to a coordinate string when manual entry is used.
 
 ## GitHub Pages deployment
 Set Pages source to GitHub Actions. Workflow should run `npm run build` and deploy `dist/`.
