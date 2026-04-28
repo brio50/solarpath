@@ -9,6 +9,9 @@ import {
   COLORS,
   SEASONS,
   sunWindowTimes,
+  fmtLocationTime,
+  formatDuration,
+  normalizeAzimuth,
 } from "./lib/solar.js";
 
 const SEATTLE = { lat: 47.6762, lon: -122.3321, name: "Seattle, Washington" };
@@ -55,7 +58,7 @@ function nowSunPosition(lat, lon) {
   const pos = SunCalc.getPosition(now, lat, lon);
   const elev = pos.altitude * (180 / Math.PI);
   if (elev < 0) return null;
-  const az = ((pos.azimuth * (180 / Math.PI)) + 180 + 360) % 360;
+  const az = normalizeAzimuth(pos.azimuth);
   return { az, elev };
 }
 
@@ -70,15 +73,11 @@ const SEASON_TOOLTIPS = {
   today:   "Selected date",
 };
 
-function Legend({ sunWindows }) {
+function Legend({ sunWindows, lon }) {
   const names = [...SEASONS.map(({ name }) => name), "today"];
 
-  const fmt = (t) => (t && !isNaN(t) ? t.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "—");
-  const fmtDur = (h) => {
-    const hh = Math.floor(h);
-    const mm = Math.round((h - hh) * 60);
-    return hh > 0 ? `${hh}h ${mm}m` : `${mm}m`;
-  };
+  const fmt = (t) => fmtLocationTime(t, lon);
+  const fmtDur = formatDuration;
 
   return (
     <div className="flex flex-wrap justify-center gap-1.5 mb-2">
@@ -216,14 +215,17 @@ export default function App() {
     }, 400);
   }
 
+  function updateCoords(newLat, newLon, name) {
+    setLat(newLat); setLon(newLon);
+    setLatInput(String(newLat)); setLonInput(String(newLon));
+    setLocationName(name); setLocationQuery(name);
+  }
+
   function selectResult(result) {
     const newLat = parseFloat(parseFloat(result.lat).toFixed(4));
     const newLon = parseFloat(parseFloat(result.lon).toFixed(4));
     const parts = result.display_name.split(", ");
-    const name = parts.slice(0, 2).join(", ");
-    setLat(newLat); setLon(newLon);
-    setLatInput(String(newLat)); setLonInput(String(newLon));
-    setLocationName(name); setLocationQuery(name);
+    updateCoords(newLat, newLon, parts.slice(0, 2).join(", "));
     setSearchResults([]);
   }
 
@@ -232,30 +234,19 @@ export default function App() {
     navigator.geolocation.getCurrentPosition((pos) => {
       const newLat = parseFloat(pos.coords.latitude.toFixed(4));
       const newLon = parseFloat(pos.coords.longitude.toFixed(4));
-      setLat(newLat); setLon(newLon);
-      setLatInput(String(newLat)); setLonInput(String(newLon));
-      setLocationName("Current location");
-      setLocationQuery("Current location");
+      updateCoords(newLat, newLon, "Current location");
       setSearchResults([]);
     });
   }
 
   function commitLat() {
-    const v = parseCoord(latInput, lat);
-    const clamped = Math.max(-90, Math.min(90, v));
-    setLat(clamped);
-    setLatInput(String(clamped));
-    setLocationName(coordLabel(clamped, lon));
-    setLocationQuery(coordLabel(clamped, lon));
+    const clamped = Math.max(-90, Math.min(90, parseCoord(latInput, lat)));
+    updateCoords(clamped, lon, coordLabel(clamped, lon));
   }
 
   function commitLon() {
-    const v = parseCoord(lonInput, lon);
-    const clamped = Math.max(-180, Math.min(180, v));
-    setLon(clamped);
-    setLonInput(String(clamped));
-    setLocationName(coordLabel(lat, clamped));
-    setLocationQuery(coordLabel(lat, clamped));
+    const clamped = Math.max(-180, Math.min(180, parseCoord(lonInput, lon)));
+    updateCoords(lat, clamped, coordLabel(lat, clamped));
   }
 
   return (
@@ -419,7 +410,7 @@ export default function App() {
       </div>
 
       <div className="relative px-3 pb-2">
-        <Legend sunWindows={sunWindows} />
+        <Legend sunWindows={sunWindows} lon={lon} />
       </div>
 
         {/* Diagram containers */}
@@ -434,7 +425,7 @@ export default function App() {
       </div>
 
       <footer className="mt-auto py-3 text-center" style={{ fontSize: 10, color: "#3f3f46" }}>
-        v0.6.2 · <a href="https://github.com/brio50/solarpath" target="_blank" rel="noopener noreferrer" className="hover:text-zinc-400 transition-colors">github.com/brio50/solarpath</a>
+        v1.0.0 · <a href="https://github.com/brio50/solarpath" target="_blank" rel="noopener noreferrer" className="hover:text-zinc-400 transition-colors">github.com/brio50/solarpath</a>
       </footer>
 
     </div>

@@ -9,6 +9,10 @@ import {
   sunWindowTimes,
   dayOfYear,
   doyToDate,
+  normalizeAzimuth,
+  relativeAzimuth,
+  fmtLocationTime,
+  formatDuration,
   SQUISH,
   SEASONS,
   COLORS,
@@ -215,6 +219,93 @@ describe('sunWindowTimes', () => {
     if (win !== null) {
       expect(win.durationHours).toBeLessThan(1);
     }
+  });
+});
+
+describe('normalizeAzimuth', () => {
+  // SunCalc convention: 0 = South, clockwise. π (or -π) = North, -π/2 = East, π/2 = West.
+  test('south (0 rad) → 180°', () => {
+    expect(normalizeAzimuth(0)).toBeCloseTo(180);
+  });
+  test('north (±π rad) → 0°', () => {
+    expect(normalizeAzimuth(Math.PI)).toBeCloseTo(0, 4);
+    expect(normalizeAzimuth(-Math.PI)).toBeCloseTo(0, 4);
+  });
+  test('east (−π/2 rad) → 90°', () => {
+    expect(normalizeAzimuth(-Math.PI / 2)).toBeCloseTo(90);
+  });
+  test('west (π/2 rad) → 270°', () => {
+    expect(normalizeAzimuth(Math.PI / 2)).toBeCloseTo(270);
+  });
+  test('result is always in [0, 360)', () => {
+    [-Math.PI, -Math.PI / 2, 0, Math.PI / 2, Math.PI].forEach(r => {
+      const deg = normalizeAzimuth(r);
+      expect(deg).toBeGreaterThanOrEqual(0);
+      expect(deg).toBeLessThan(360);
+    });
+  });
+});
+
+describe('relativeAzimuth', () => {
+  test('sun at facing → 0', () => {
+    expect(relativeAzimuth(180, 180)).toBeCloseTo(0);
+  });
+  test('sun 90° right of facing → +90', () => {
+    expect(relativeAzimuth(270, 180)).toBeCloseTo(90);
+  });
+  test('sun 90° left of facing → -90', () => {
+    expect(relativeAzimuth(90, 180)).toBeCloseTo(-90);
+  });
+  test('sun directly behind → ±180', () => {
+    expect(Math.abs(relativeAzimuth(0, 180))).toBeCloseTo(180);
+  });
+  test('wraps correctly across north (0°/360° boundary)', () => {
+    // facing=10°, sun=350° → 10° to the left = -20
+    expect(relativeAzimuth(350, 10)).toBeCloseTo(-20);
+  });
+});
+
+describe('fmtLocationTime', () => {
+  test('null input returns "—"', () => {
+    expect(fmtLocationTime(null, 0)).toBe('—');
+  });
+  test('formats UTC noon at lon=0 as 12:00 PM', () => {
+    const t = new Date(Date.UTC(2025, 5, 21, 12, 0, 0));
+    expect(fmtLocationTime(t, 0)).toBe('12:00 PM');
+  });
+  test('Tokyo (lon≈135) offsets by +9h: UTC 3:00 → 12:00 PM', () => {
+    const t = new Date(Date.UTC(2025, 5, 21, 3, 0, 0));
+    expect(fmtLocationTime(t, 135)).toBe('12:00 PM');
+  });
+  test('Seattle (lon≈-120) offsets by -8h: UTC 20:00 → 12:00 PM', () => {
+    const t = new Date(Date.UTC(2025, 5, 21, 20, 0, 0));
+    expect(fmtLocationTime(t, -120)).toBe('12:00 PM');
+  });
+  test('formats minutes correctly', () => {
+    const t = new Date(Date.UTC(2025, 5, 21, 14, 35, 0));
+    expect(fmtLocationTime(t, 0)).toBe('2:35 PM');
+  });
+  test('midnight (0:00) formats as 12:00 AM', () => {
+    const t = new Date(Date.UTC(2025, 5, 21, 0, 0, 0));
+    expect(fmtLocationTime(t, 0)).toBe('12:00 AM');
+  });
+});
+
+describe('formatDuration', () => {
+  test('whole hours', () => {
+    expect(formatDuration(3)).toBe('3h 0m');
+  });
+  test('minutes only (< 1 hour)', () => {
+    expect(formatDuration(0.5)).toBe('30m');
+  });
+  test('hours and minutes', () => {
+    expect(formatDuration(1.5)).toBe('1h 30m');
+  });
+  test('rounds fractional minutes', () => {
+    expect(formatDuration(1 + 29.6 / 60)).toBe('1h 30m');
+  });
+  test('zero duration → "0m"', () => {
+    expect(formatDuration(0)).toBe('0m');
   });
 });
 

@@ -35,6 +35,35 @@ export function doyToDate(doy, year) {
   return new Date(year, 0, doy);
 }
 
+// Convert SunCalc azimuth (radians, south-clockwise) to degrees from north clockwise.
+export function normalizeAzimuth(rad) {
+  return ((rad * (180 / Math.PI)) + 180 + 360) % 360;
+}
+
+// Signed bearing difference: how far azDeg is from facing, in [-180, 180].
+export function relativeAzimuth(azDeg, facing) {
+  return (((azDeg - facing + 180 + 360) % 360) - 180);
+}
+
+// Format a UTC Date as local time at a given longitude (rounds to nearest hour zone).
+export function fmtLocationTime(t, lon) {
+  if (!t || isNaN(t)) return "—";
+  const offsetMin = Math.round(lon / 15) * 60;
+  const shifted = new Date(t.getTime() + offsetMin * 60000);
+  const h = shifted.getUTCHours();
+  const m = shifted.getUTCMinutes();
+  const ampm = h >= 12 ? "PM" : "AM";
+  const h12 = h % 12 || 12;
+  return `${h12}:${String(m).padStart(2, "0")} ${ampm}`;
+}
+
+// Format a fractional-hours duration as "Xh Ym" or "Ym".
+export function formatDuration(hours) {
+  const h = Math.floor(hours);
+  const m = Math.round((hours - h) * 60);
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
+
 // Returns array of { az, elev } (degrees) from sunrise to sunset, n samples.
 // az: degrees from north, clockwise (0=N, 90=E, 180=S, 270=W)
 export function arcPoints(date, lat, lon, n = 200) {
@@ -46,8 +75,7 @@ export function arcPoints(date, lat, lon, n = 200) {
     const t = new Date(sunrise.getTime() + (i / (n - 1)) * (sunset - sunrise));
     const pos = SunCalc.getPosition(t, lat, lon);
     const elev = Math.max(0, pos.altitude * (180 / Math.PI));
-    // suncalc azimuth: radians from south clockwise → degrees from north clockwise
-    const az = ((pos.azimuth * (180 / Math.PI)) + 180 + 360) % 360;
+    const az = normalizeAzimuth(pos.azimuth);
     points.push({ az, elev });
   }
   return points;
@@ -64,7 +92,7 @@ export function sunWindowTimes(date, lat, lon, facing, n = 1440) {
     const t = new Date(sunrise.getTime() + (i / (n - 1)) * (sunset - sunrise));
     const pos = SunCalc.getPosition(t, lat, lon);
     if (pos.altitude < 0) continue;
-    const az = ((pos.azimuth * 180 / Math.PI) + 180 + 360) % 360;
+    const az = normalizeAzimuth(pos.azimuth);
     const diff = (az - facing + 360) % 360;
     if (diff < 90 || diff > 270) {
       const entry = { t, az, elev: pos.altitude * 180 / Math.PI };
@@ -105,7 +133,7 @@ export function topViewCoords(azDeg, elevDeg, rMax = 1.0, facing = 180, squishY 
 
 // Side view: semi-ellipse with `facing` direction at center bottom, ±90° to each side.
 export function sideViewCoords(azDeg, elevDeg, rMax = 1.0, facing = 180, squishY = SQUISH) {
-  const d = (((azDeg - facing + 180 + 360) % 360) - 180);
+  const d = relativeAzimuth(azDeg, facing);
   return {
     x: d / 90.0 * rMax,
     y: (elevDeg / 90.0) * rMax * squishY,

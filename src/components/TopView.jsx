@@ -82,20 +82,23 @@ export default function TopView({ lat, lon, date, nowDot, facing, sunWindows }) 
         <ElevationRings />
         <CardinalLines facing={facing} />
 
-        {SEASONS.map(({ name, doy }) => {
-          const d = doyToDate(doy, year);
+        {(() => {
+          const project = (az, elev) => topViewCoords(az, elev, R, facing, SY);
           return (
-            <g key={name}>
-              <GradientArc date={d} lat={lat} lon={lon} facing={facing} color={COLORS[name]} />
-              <WindowDots win={sunWindows[name]} project={(az, elev) => topViewCoords(az, elev, R, facing, SY)} color={COLORS[name]} />
-            </g>
+            <>
+              {SEASONS.map(({ name, doy }) => (
+                <g key={name}>
+                  <GradientArc date={doyToDate(doy, year)} lat={lat} lon={lon} facing={facing} color={COLORS[name]} />
+                  <WindowDots win={sunWindows[name]} project={project} color={COLORS[name]} lon={lon} />
+                </g>
+              ))}
+              <g>
+                <GradientArc date={date} lat={lat} lon={lon} facing={facing} color={COLORS.today} />
+                <WindowDots win={sunWindows.today} project={project} color={COLORS.today} lon={lon} />
+              </g>
+            </>
           );
-        })}
-
-        <g>
-          <GradientArc date={date} lat={lat} lon={lon} facing={facing} color={COLORS.today} />
-          <WindowDots win={sunWindows.today} project={(az, elev) => topViewCoords(az, elev, R, facing, SY)} color={COLORS.today} />
-        </g>
+        })()}
 
         {nowDot && (() => {
           const { x, y } = topViewCoords(nowDot.az, nowDot.elev, R, facing, SY);

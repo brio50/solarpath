@@ -31,12 +31,12 @@ function renderTopView(props = {}) {
 }
 
 describe('TopView — viewBox', () => {
-  test('viewBox is 390 wide × 230 tall (tight to content)', () => {
+  test('viewBox is 390 wide × 339 tall', () => {
     const { container } = renderTopView();
     const svg = container.querySelector('svg');
     const [, , w, h] = svg.getAttribute('viewBox').split(' ').map(Number);
     expect(w).toBe(390);
-    expect(h).toBe(230);
+    expect(h).toBe(339);
   });
 });
 

@@ -1,4 +1,4 @@
-import { arcPoints, sideViewCoords, compassLabel, compassName, doyToDate, COLORS, SEASONS } from "../lib/solar.js";
+import { arcPoints, sideViewCoords, relativeAzimuth, compassLabel, compassName, doyToDate, COLORS, SEASONS } from "../lib/solar.js";
 import SunSymbol from "./SunSymbol.jsx";
 import WindowDots from "./WindowDots.jsx";
 
@@ -11,7 +11,7 @@ function arcSegments(pts, facing) {
   let cur = [];
   let prevD = null;
   for (const p of pts) {
-    const d = (((p.az - facing + 180 + 360) % 360) - 180);
+    const d = relativeAzimuth(p.az, facing);
     if (prevD !== null && Math.abs(d - prevD) > 180) {
       if (cur.length >= 2) segs.push(cur);
       cur = [];
@@ -103,20 +103,23 @@ export default function SideView({ lat, lon, date, nowDot, facing, sunWindows })
         <ElevationLines />
         <Axes facing={facing} />
 
-        {SEASONS.map(({ name, doy }) => {
-          const d = doyToDate(doy, year);
+        {(() => {
+          const project = (az, elev) => { const { x, y } = sideViewCoords(az, elev, R, facing, SY); return { x, y: -y }; };
           return (
-            <g key={name}>
-              <SunArc date={d} lat={lat} lon={lon} color={COLORS[name]} facing={facing} />
-              <WindowDots win={sunWindows[name]} project={(az, elev) => { const {x, y} = sideViewCoords(az, elev, R, facing, SY); return {x, y: -y}; }} color={COLORS[name]} />
-            </g>
+            <>
+              {SEASONS.map(({ name, doy }) => (
+                <g key={name}>
+                  <SunArc date={doyToDate(doy, year)} lat={lat} lon={lon} color={COLORS[name]} facing={facing} />
+                  <WindowDots win={sunWindows[name]} project={project} color={COLORS[name]} lon={lon} />
+                </g>
+              ))}
+              <g>
+                <SunArc date={date} lat={lat} lon={lon} color={COLORS.today} facing={facing} />
+                <WindowDots win={sunWindows.today} project={project} color={COLORS.today} lon={lon} />
+              </g>
+            </>
           );
-        })}
-
-        <g>
-          <SunArc date={date} lat={lat} lon={lon} color={COLORS.today} facing={facing} />
-          <WindowDots win={sunWindows.today} project={(az, elev) => { const {x, y} = sideViewCoords(az, elev, R, facing, SY); return {x, y: -y}; }} color={COLORS.today} />
-        </g>
+        })()}
 
         {nowDot && (() => {
           const { x, y } = sideViewCoords(nowDot.az, nowDot.elev, R, facing, SY);

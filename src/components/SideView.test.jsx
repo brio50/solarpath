@@ -32,19 +32,12 @@ function renderSideView(props = {}) {
 }
 
 describe('SideView — viewBox', () => {
-  test('viewBox is 390 wide × 134 tall (tight to content)', () => {
+  test('viewBox is 390 wide × 182 tall', () => {
     const { container } = renderSideView();
     const svg = container.querySelector('svg');
     const [, , w, h] = svg.getAttribute('viewBox').split(' ').map(Number);
     expect(w).toBe(390);
-    expect(h).toBe(134);
-  });
-
-  test('viewBox height is 134 (same proportion as aspect-ratio container)', () => {
-    const { container } = renderSideView();
-    const svg = container.querySelector('svg');
-    const h = Number(svg.getAttribute('viewBox').split(' ')[3]);
-    expect(h).toBe(134);
+    expect(h).toBe(182);
   });
 });
 

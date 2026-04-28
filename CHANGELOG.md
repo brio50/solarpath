@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] - 2026-04-27
+
+### Changed
+- Extracted shared utilities to `solar.js`: `normalizeAzimuth`, `relativeAzimuth`, `fmtLocationTime`, `formatDuration` — eliminating duplicate logic across `App.jsx`, `WindowDots.jsx`, `SideView.jsx`
+- `updateCoords` helper in `App.jsx` consolidates three repeated paired-setter blocks for lat/lon state
+- Projector lambdas in `TopView` and `SideView` defined once as a local constant and shared across season + today renders
+- Test suite expanded with 20 new tests covering all four new utilities; stale viewBox dimension assertions corrected; redundant duplicate viewBox test removed
+
+## [0.6.3] - 2026-04-27
+
+### Fixed
+- Sun exposure times in the legend now display in the location's local timezone instead of the browser's timezone; times are derived from UTC offset calculated from longitude (`round(lon / 15)` hours)
+
 ## [0.6.2] - 2026-04-27
 
 ### Fixed
