@@ -331,19 +331,23 @@ export default function App() {
               <button
                 onClick={() => setShowCoords(false)}
                 title="Switch to location search"
-                className="flex-shrink-0 text-[9px] uppercase tracking-wide font-medium px-2 h-7 rounded-md border border-emerald-700 bg-emerald-950 text-emerald-400 hover:bg-emerald-900 transition-colors"
+                className="flex-shrink-0 text-[9px] uppercase tracking-wide font-medium px-2 h-7 rounded-md border border-zinc-700 bg-zinc-800 text-zinc-500 hover:text-zinc-300 hover:border-zinc-600 transition-colors"
               >
                 search
               </button>
               <label className="flex items-center gap-1 text-xs text-zinc-500">
                 Lat
                 <Input type="number" min={-90} max={90} step={0.0001} value={latInput}
-                  onChange={(e) => setLatInput(e.target.value)} onBlur={commitLat} className="w-[80px]" />
+                  onChange={(e) => setLatInput(e.target.value)} onBlur={commitLat}
+                  onKeyDown={(e) => { if (e.key === "Enter") { commitLat(); e.target.blur(); } }}
+                  className="w-[80px]" />
               </label>
               <label className="flex items-center gap-1 text-xs text-zinc-500">
                 Lon
                 <Input type="number" min={-180} max={180} step={0.0001} value={lonInput}
-                  onChange={(e) => setLonInput(e.target.value)} onBlur={commitLon} className="w-[80px]" />
+                  onChange={(e) => setLonInput(e.target.value)} onBlur={commitLon}
+                  onKeyDown={(e) => { if (e.key === "Enter") { commitLon(); e.target.blur(); } }}
+                  className="w-[80px]" />
               </label>
             </div>
           )}
