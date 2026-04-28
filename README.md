@@ -12,6 +12,7 @@ A browser-based sun path visualizer for any location and date. Shows the sun's d
 - A live sun symbol on today's arc at the current local time (shown when viewing today)
 - **Sun data table** — Sun In / Sun Out / Duration for each season at the current facing and location; updates live as you adjust controls
 - Hover dots on each arc mark when the sun enters and exits the facing window
+- **Shareable URLs** — all state (location, date, facing) is encoded in the URL; use the Share button in the nav to copy a direct link
 
 ## Controls
 
