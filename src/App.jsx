@@ -13,9 +13,26 @@ import {
 
 const SEATTLE = { lat: 47.6762, lon: -122.3321, name: "Seattle, Washington" };
 
-const FACINGS = [
-  { deg: 0 }, { deg: 90 }, { deg: 180 }, { deg: 270 },
-];
+function parseUrlParams() {
+  const p = new URLSearchParams(window.location.search);
+  const lat = parseFloat(p.get("lat"));
+  const lon = parseFloat(p.get("lon"));
+  const dateStr = p.get("date");
+  const facing = parseInt(p.get("facing"), 10);
+  const rlat = !isNaN(lat) ? Math.max(-90,  Math.min(90,  lat))    : SEATTLE.lat;
+  const rlon = !isNaN(lon) ? Math.max(-180, Math.min(180, lon))    : SEATTLE.lon;
+  const defaultName = (rlat === SEATTLE.lat && rlon === SEATTLE.lon)
+    ? SEATTLE.name
+    : coordLabel(rlat, rlon);
+  return {
+    lat:    rlat,
+    lon:    rlon,
+    date:   dateStr ? parseDateInput(dateStr) : new Date(),
+    facing: !isNaN(facing) && facing >= 0 && facing <= 359 ? facing : 180,
+    name:   p.get("name") || defaultName,
+  };
+}
+const URL_PARAMS = parseUrlParams();
 
 function toDateInput(d) {
   return d.toISOString().slice(0, 10);
@@ -45,6 +62,13 @@ function nowSunPosition(lat, lon) {
 function coordLabel(lat, lon) {
   return `${Math.abs(lat).toFixed(4)}°${lat >= 0 ? "N" : "S"}, ${Math.abs(lon).toFixed(4)}°${lon >= 0 ? "E" : "W"}`;
 }
+
+const SEASON_TOOLTIPS = {
+  summer:  "Summer solstice · Jun 21",
+  equinox: "Spring equinox · Mar 21",
+  winter:  "Winter solstice · Dec 21",
+  today:   "Selected date",
+};
 
 function Legend({ sunWindows }) {
   const names = [...SEASONS.map(({ name }) => name), "today"];
@@ -80,12 +104,6 @@ function Legend({ sunWindows }) {
           </div>
         );
       })}
-      <div className="flex items-center gap-1.5 bg-zinc-900 border border-zinc-800 rounded-full px-2.5 py-0.5">
-        <svg width={10} height={10} style={{ flexShrink: 0 }}>
-          <circle cx={5} cy={5} r={3.5} fill="#a1a1aa" stroke="white" strokeWidth={1} />
-        </svg>
-        <span style={{ fontSize: 10 }} className="text-zinc-500 whitespace-nowrap">hover for sun window</span>
-      </div>
     </div>
   );
 }
@@ -102,15 +120,25 @@ function CrosshairIcon() {
   );
 }
 
+function LinkIcon() {
+  return (
+    <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+    </svg>
+  );
+}
+
 export default function App() {
-  const today = new Date();
-  const [lat, setLat] = useState(SEATTLE.lat);
-  const [lon, setLon] = useState(SEATTLE.lon);
-  const [latInput, setLatInput] = useState(String(SEATTLE.lat));
-  const [lonInput, setLonInput] = useState(String(SEATTLE.lon));
-  const [selectedDate, setSelectedDate] = useState(today);
+  const [lat, setLat] = useState(URL_PARAMS.lat);
+  const [lon, setLon] = useState(URL_PARAMS.lon);
+  const [latInput, setLatInput] = useState(String(URL_PARAMS.lat));
+  const [lonInput, setLonInput] = useState(String(URL_PARAMS.lon));
+  const [selectedDate, setSelectedDate] = useState(URL_PARAMS.date);
   const [nowDot, setNowDot] = useState(null);
-  const [facing, setFacing] = useState(180);
+  const [facing, setFacing] = useState(URL_PARAMS.facing);
+  const [facingDraft, setFacingDraft] = useState(String(URL_PARAMS.facing));
+  const [copied, setCopied] = useState(false);
 
   const sunWindows = useMemo(() => {
     const year = selectedDate.getFullYear();
@@ -121,8 +149,8 @@ export default function App() {
     return result;
   }, [lat, lon, selectedDate, facing]);
 
-  const [locationName, setLocationName] = useState(SEATTLE.name);
-  const [locationQuery, setLocationQuery] = useState(SEATTLE.name);
+  const [locationName, setLocationName] = useState(URL_PARAMS.name);
+  const [locationQuery, setLocationQuery] = useState(URL_PARAMS.name);
   const [searchResults, setSearchResults] = useState([]);
   const [showCoords, setShowCoords] = useState(false);
   const searchTimeoutRef = useRef(null);
@@ -138,6 +166,35 @@ export default function App() {
     const id = setInterval(updateNowDot, 60000);
     return () => clearInterval(id);
   }, [updateNowDot]);
+
+  useEffect(() => {
+    const p = new URLSearchParams({
+      lat: lat.toFixed(4),
+      lon: lon.toFixed(4),
+      date: toDateInput(selectedDate),
+      facing: String(facing),
+      name: locationName,
+    });
+    history.replaceState(null, "", "?" + p.toString());
+  }, [lat, lon, selectedDate, facing, locationName]);
+
+  const shareUrl = useMemo(() => {
+    const p = new URLSearchParams({
+      lat: lat.toFixed(4),
+      lon: lon.toFixed(4),
+      date: toDateInput(selectedDate),
+      facing: String(facing),
+      name: locationName,
+    });
+    return `${window.location.origin}${window.location.pathname}?${p.toString()}`;
+  }, [lat, lon, selectedDate, facing, locationName]);
+
+  function shareLink() {
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }).catch(() => {});
+  }
 
   function handleLocationInput(value) {
     setLocationQuery(value);
@@ -213,7 +270,7 @@ export default function App() {
       <div className="relative flex items-center gap-3 px-5 py-2.5 flex-wrap justify-center">
           <h1
             className="text-zinc-200 uppercase"
-            style={{ fontFamily: "'Orbitron', sans-serif", fontSize: "11px", fontWeight: 700, letterSpacing: "0.2em" }}
+            style={{ fontFamily: "'Orbitron', sans-serif", fontSize: "15px", fontWeight: 700, letterSpacing: "0.2em" }}
           >
             Solar Path
           </h1>
@@ -302,10 +359,12 @@ export default function App() {
           <div className="flex items-center gap-2.5">
             <span className="text-xs text-zinc-500">Facing</span>
             <div className="flex flex-col items-center gap-0.5">
-              <Slider min={0} max={360} step={1} value={[facing]}
+              <Slider min={0} max={359} step={1} value={[facing]}
                 onValueChange={([v]) => {
-                  const snap = FACINGS.find(({ deg }) => Math.min(Math.abs(v - deg), 360 - Math.abs(v - deg)) <= 8);
-                  setFacing(snap ? snap.deg : v % 360);
+                  const cardinals = [0, 90, 180, 270];
+                  const snapped = cardinals.find((c) => Math.abs(v - c) <= 8);
+                  const val = snapped ?? v;
+                  setFacing(val); setFacingDraft(String(val));
                 }}
                 className="w-32"
               />
@@ -313,26 +372,55 @@ export default function App() {
                 <span>N</span><span>E</span><span>S</span><span>W</span><span>N</span>
               </div>
             </div>
-            <span className="text-xs font-semibold text-emerald-400 min-w-[32px]">{facing}°</span>
+            <div className="h-7 rounded-md border border-zinc-700 bg-zinc-900 flex items-center justify-center px-2.5 shadow-sm focus-within:ring-1 focus-within:ring-zinc-400 transition-colors">
+              <input
+                type="text" inputMode="numeric" min={0} max={359}
+                value={facingDraft}
+                onChange={(e) => {
+                  setFacingDraft(e.target.value);
+                  const v = parseInt(e.target.value, 10);
+                  if (!isNaN(v) && v >= 0 && v <= 359) setFacing(v);
+                }}
+                onBlur={() => setFacingDraft(String(facing))}
+                className="text-xs font-semibold text-zinc-100 bg-transparent border-none outline-none text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                style={{ width: `${(facingDraft.length || 1) + 0.2}ch` }}
+              />
+              <span className="text-xs font-semibold text-white select-none">°</span>
+            </div>
           </div>
 
-      </div>
+          <div className="w-px h-5 bg-zinc-700 mx-0.5" />
 
-      <div className="relative px-3 pb-2 pt-1">
-        <Legend sunWindows={sunWindows} />
+          <button
+            onClick={shareLink}
+            title={shareUrl}
+            className="flex items-center gap-1.5 text-[9px] uppercase tracking-wide font-medium px-2 h-7 rounded-md border border-zinc-700 bg-zinc-800 text-zinc-500 hover:text-zinc-300 hover:border-zinc-600 transition-colors"
+          >
+            <LinkIcon />
+            {copied ? "Copied!" : "Share"}
+          </button>
+
       </div>
 
       </div>
 
       {/* Page content */}
-      <div className="relative z-10 px-3 pt-1.5 pb-4 flex flex-col">
+      <div className="relative z-10 px-3 pt-2 pb-4 flex flex-col">
+
+      <div className="text-center pb-1" style={{ fontSize: 10, color: "#52525b" }}>
+        Shows when and how long the sun shines directly on a surface at your location. Adjust facing direction to see seasonal exposure windows.
+      </div>
+
+      <div className="relative px-3 pb-2">
+        <Legend sunWindows={sunWindows} />
+      </div>
 
         {/* Diagram containers */}
         <div className="flex flex-col md:flex-row gap-1.5">
-          <div className="relative w-full md:flex-1 aspect-[390/230] border border-zinc-800/50 rounded-xl overflow-hidden bg-zinc-950/40">
+          <div className="relative w-full md:flex-1 aspect-[390/339] border border-zinc-700/70 rounded-xl overflow-hidden bg-zinc-950/30">
             <TopView lat={lat} lon={lon} date={selectedDate} nowDot={nowDot} facing={facing} sunWindows={sunWindows} />
           </div>
-          <div className="relative w-full md:flex-1 aspect-[390/134] border border-zinc-800/50 rounded-xl overflow-hidden bg-zinc-950/40">
+          <div className="relative w-full md:flex-1 aspect-[390/182] border border-zinc-700/70 rounded-xl overflow-hidden bg-zinc-950/30">
             <SideView lat={lat} lon={lon} date={selectedDate} nowDot={nowDot} facing={facing} sunWindows={sunWindows} />
           </div>
         </div>
