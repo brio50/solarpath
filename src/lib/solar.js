@@ -16,8 +16,12 @@ export const SEASONS = [
 ];
 
 const COMPASS_DIRS = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+const COMPASS_NAMES = ["North", "Northeast", "East", "Southeast", "South", "Southwest", "West", "Northwest"];
 export function compassLabel(azDeg) {
   return COMPASS_DIRS[Math.round(((azDeg % 360) + 360) % 360 / 45) % 8];
+}
+export function compassName(azDeg) {
+  return COMPASS_NAMES[Math.round(((azDeg % 360) + 360) % 360 / 45) % 8];
 }
 
 // Day of year (1-based) from a JS Date object.
@@ -89,21 +93,21 @@ export function solarNoonElevation(date, lat, lon) {
 }
 
 // Top view: azimuth polar plot rotated so `facing` direction appears at the top.
-export function topViewCoords(azDeg, elevDeg, rMax = 1.0, facing = 180) {
+export function topViewCoords(azDeg, elevDeg, rMax = 1.0, facing = 180, squishY = SQUISH) {
   const az_rot = ((azDeg - facing + 180 + 360) % 360);
   const az_r = (az_rot * Math.PI) / 180;
   const r = rMax * (90.0 - elevDeg) / 90.0;
   return {
     x: -r * Math.sin(az_r),
-    y:  r * Math.cos(az_r) * SQUISH,
+    y:  r * Math.cos(az_r) * squishY,
   };
 }
 
 // Side view: semi-ellipse with `facing` direction at center bottom, ±90° to each side.
-export function sideViewCoords(azDeg, elevDeg, rMax = 1.0, facing = 180) {
+export function sideViewCoords(azDeg, elevDeg, rMax = 1.0, facing = 180, squishY = SQUISH) {
   const d = (((azDeg - facing + 180 + 360) % 360) - 180);
   return {
     x: d / 90.0 * rMax,
-    y: (elevDeg / 90.0) * rMax * SQUISH,
+    y: (elevDeg / 90.0) * rMax * squishY,
   };
 }

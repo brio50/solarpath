@@ -61,8 +61,8 @@ The SVG container in App.jsx uses `style={{ aspectRatio: "<vbW>/<vbH>" }}` match
 Current values (update `aspect-[...]` class in App.jsx when viewBox changes):
 | View | viewBox | Tailwind class |
 |---|---|---|
-| TopView | `-195 -115 390 230` | `aspect-[390/230]` |
-| SideView | `-195 -112 390 134` | `aspect-[390/134]` |
+| TopView | `-195 -167 390 339` | `aspect-[390/339]` |
+| SideView | `-195 -160 390 182` | `aspect-[390/182]` |
 
 ## Coordinate system
 
@@ -80,18 +80,18 @@ Current values (update `aspect-[...]` class in App.jsx when viewBox changes):
 2. Each `{az, elev}` pair is projected into SVG `{x, y}` by `topViewCoords()` or `sideViewCoords()`.
 3. The resulting points are joined into a `points="x1,y1 x2,y2 ..."` string and rendered as an SVG `<polyline>`. All other elements (rings, axis lines, labels, dots) are plain SVG primitives placed by the same math.
 
-### SQUISH and elliptical shape
-Both views use `SQUISH = 95/148 ≈ 0.642` on the vertical axis to create the elliptical shape.
+### Shape and squish
+`SQUISH = 95/148 ≈ 0.642` is defined in solar.js as a legacy default. Both views now use `squishY = 1` (no squish), passed as the 5th argument to `topViewCoords()` / `sideViewCoords()`.
 
-**Top view** (`TopView.jsx`): center = zenith, facing direction at top, rotates data not compass.
-- R = 150 SVG units; viewBox = `-195 -115 390 230`
+**Top view** (`TopView.jsx`): circular compass; center = zenith, facing direction at top, rotates data not compass.
+- R = 150 SVG units; viewBox = `-195 -167 390 339`
 - `r = R * (90 - elev) / 90`
-- `x = -r * sin(az_rot)`, `y = r * cos(az_rot) * SQUISH` where `az_rot = ((az - facing + 180 + 360) % 360)`
+- `x = -r * sin(az_rot)`, `y = r * cos(az_rot)` (no squish) where `az_rot = ((az - facing + 180 + 360) % 360)`
 
 **Side view** (`SideView.jsx`): full 360° panoramic; facing direction at center bottom, ±90° = horizon edges, grey zones = behind viewer.
-- R = 150 SVG units (matches TopView R so boundary arc width = compass diameter); viewBox = `-195 -112 390 134`
+- R = 150 SVG units (matches TopView R so boundary arc width = compass diameter); viewBox = `-195 -160 390 182`
 - `x = d / 90 * R` where `d = (((az - facing + 180 + 360) % 360) - 180)`
-- `y = elev / 90 * R * SQUISH` (negated for SVG: upward = negative y)
+- `y = elev / 90 * R` (no squish; negated for SVG: upward = negative y)
 
 ## Solar geometry (src/lib/solar.js)
 - Declination: `23.45 * sin(360/365 * (doy - 81))`
