@@ -168,14 +168,17 @@ export default function App() {
   }, [updateNowDot]);
 
   useEffect(() => {
-    const p = new URLSearchParams({
-      lat: lat.toFixed(4),
-      lon: lon.toFixed(4),
-      date: toDateInput(selectedDate),
-      facing: String(facing),
-      name: locationName,
-    });
-    history.replaceState(null, "", "?" + p.toString());
+    const id = setTimeout(() => {
+      const p = new URLSearchParams({
+        lat: lat.toFixed(4),
+        lon: lon.toFixed(4),
+        date: toDateInput(selectedDate),
+        facing: String(facing),
+        name: locationName,
+      });
+      history.replaceState(null, "", "?" + p.toString());
+    }, 300);
+    return () => clearTimeout(id);
   }, [lat, lon, selectedDate, facing, locationName]);
 
   const shareUrl = useMemo(() => {
@@ -431,7 +434,7 @@ export default function App() {
       </div>
 
       <footer className="mt-auto py-3 text-center" style={{ fontSize: 10, color: "#3f3f46" }}>
-        v0.6.1 · <a href="https://github.com/brio50/solarpath" target="_blank" rel="noopener noreferrer" className="hover:text-zinc-400 transition-colors">github.com/brio50/solarpath</a>
+        v0.6.2 · <a href="https://github.com/brio50/solarpath" target="_blank" rel="noopener noreferrer" className="hover:text-zinc-400 transition-colors">github.com/brio50/solarpath</a>
       </footer>
 
     </div>
