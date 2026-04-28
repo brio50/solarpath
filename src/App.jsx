@@ -430,6 +430,10 @@ export default function App() {
         </div>
       </div>
 
+      <footer className="mt-auto py-3 text-center" style={{ fontSize: 10, color: "#3f3f46" }}>
+        v0.6.1 · <a href="https://github.com/brio50/solarpath" target="_blank" rel="noopener noreferrer" className="hover:text-zinc-400 transition-colors">github.com/brio50/solarpath</a>
+      </footer>
+
     </div>
   );
 }
