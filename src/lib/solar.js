@@ -1,4 +1,5 @@
 import SunCalc from "suncalc";
+import tzlookup from "tz-lookup";
 
 export const SQUISH = 95 / 148;
 
@@ -45,16 +46,14 @@ export function relativeAzimuth(azDeg, facing) {
   return (((azDeg - facing + 180 + 360) % 360) - 180);
 }
 
-// Format a UTC Date as local time at a given longitude (rounds to nearest hour zone).
-export function fmtLocationTime(t, lon) {
+export function getTimezone(lat, lon) {
+  return tzlookup(lat, lon);
+}
+
+// Format a UTC Date as local time for the given IANA timezone string.
+export function fmtLocationTime(t, tz) {
   if (!t || isNaN(t)) return "—";
-  const offsetMin = Math.round(lon / 15) * 60;
-  const shifted = new Date(t.getTime() + offsetMin * 60000);
-  const h = shifted.getUTCHours();
-  const m = shifted.getUTCMinutes();
-  const ampm = h >= 12 ? "PM" : "AM";
-  const h12 = h % 12 || 12;
-  return `${h12}:${String(m).padStart(2, "0")} ${ampm}`;
+  return t.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", timeZone: tz });
 }
 
 // Format a fractional-hours duration as "Xh Ym" or "Ym".

@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { fmtLocationTime, formatDuration } from "../lib/solar.js";
 
-export default function WindowDots({ win, project, color, lon }) {
+export default function WindowDots({ win, project, color, tz }) {
   const [hovered, setHovered] = useState(null);
   if (!win) return null;
 
   const { start, end, durationHours } = win;
-  const fmt = (t) => fmtLocationTime(t, lon);
+  const fmt = (t) => fmtLocationTime(t, tz);
   const durStr = formatDuration(durationHours);
 
   const Dot = ({ id, az, elev, label, sublabel }) => {

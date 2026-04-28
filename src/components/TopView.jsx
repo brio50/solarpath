@@ -66,7 +66,7 @@ function CardinalLines({ facing }) {
 
 
 
-export default function TopView({ lat, lon, date, nowDot, facing, sunWindows }) {
+export default function TopView({ lat, lon, date, nowDot, facing, sunWindows, tz }) {
   const year = date.getFullYear();
   const viewBox = "-195 -167 390 339";
 
@@ -89,12 +89,12 @@ export default function TopView({ lat, lon, date, nowDot, facing, sunWindows }) 
               {SEASONS.map(({ name, doy }) => (
                 <g key={name}>
                   <GradientArc date={doyToDate(doy, year)} lat={lat} lon={lon} facing={facing} color={COLORS[name]} />
-                  <WindowDots win={sunWindows[name]} project={project} color={COLORS[name]} lon={lon} />
+                  <WindowDots win={sunWindows[name]} project={project} color={COLORS[name]} tz={tz} />
                 </g>
               ))}
               <g>
                 <GradientArc date={date} lat={lat} lon={lon} facing={facing} color={COLORS.today} />
-                <WindowDots win={sunWindows.today} project={project} color={COLORS.today} lon={lon} />
+                <WindowDots win={sunWindows.today} project={project} color={COLORS.today} tz={tz} />
               </g>
             </>
           );

@@ -1,9 +1,9 @@
 # Changelog
 
-All notable changes to this project will be documented in this file.
+## v1.0.1 — 2026-04-27
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+### Fixed
+- Window dot tooltips now show correct local time for the displayed location, including DST. Previously, times used a longitude-rounded UTC offset (PST for Seattle year-round), making them 1 hour early in summer. Now uses IANA timezone lookup (`tz-lookup`) with `Intl.DateTimeFormat`, so times reflect the actual local clock at the selected coordinates.
 
 ## [1.0.0] - 2026-04-27
 

@@ -87,7 +87,7 @@ function BehindZone() {
 }
 
 
-export default function SideView({ lat, lon, date, nowDot, facing, sunWindows }) {
+export default function SideView({ lat, lon, date, nowDot, facing, sunWindows, tz }) {
   const year = date.getFullYear();
   const viewBox = "-195 -160 390 182";
 
@@ -110,12 +110,12 @@ export default function SideView({ lat, lon, date, nowDot, facing, sunWindows })
               {SEASONS.map(({ name, doy }) => (
                 <g key={name}>
                   <SunArc date={doyToDate(doy, year)} lat={lat} lon={lon} color={COLORS[name]} facing={facing} />
-                  <WindowDots win={sunWindows[name]} project={project} color={COLORS[name]} lon={lon} />
+                  <WindowDots win={sunWindows[name]} project={project} color={COLORS[name]} tz={tz} />
                 </g>
               ))}
               <g>
                 <SunArc date={date} lat={lat} lon={lon} color={COLORS.today} facing={facing} />
-                <WindowDots win={sunWindows.today} project={project} color={COLORS.today} lon={lon} />
+                <WindowDots win={sunWindows.today} project={project} color={COLORS.today} tz={tz} />
               </g>
             </>
           );

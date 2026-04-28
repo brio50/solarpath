@@ -12,6 +12,7 @@ import {
   fmtLocationTime,
   formatDuration,
   normalizeAzimuth,
+  getTimezone,
 } from "./lib/solar.js";
 
 const SEATTLE = { lat: 47.6762, lon: -122.3321, name: "Seattle, Washington" };
@@ -73,10 +74,10 @@ const SEASON_TOOLTIPS = {
   today:   "Selected date",
 };
 
-function Legend({ sunWindows, lon }) {
+function Legend({ sunWindows, tz }) {
   const names = [...SEASONS.map(({ name }) => name), "today"];
 
-  const fmt = (t) => fmtLocationTime(t, lon);
+  const fmt = (t) => fmtLocationTime(t, tz);
   const fmtDur = formatDuration;
 
   return (
@@ -131,6 +132,7 @@ function LinkIcon() {
 export default function App() {
   const [lat, setLat] = useState(URL_PARAMS.lat);
   const [lon, setLon] = useState(URL_PARAMS.lon);
+  const tz = useMemo(() => getTimezone(lat, lon), [lat, lon]);
   const [latInput, setLatInput] = useState(String(URL_PARAMS.lat));
   const [lonInput, setLonInput] = useState(String(URL_PARAMS.lon));
   const [selectedDate, setSelectedDate] = useState(URL_PARAMS.date);
@@ -410,22 +412,22 @@ export default function App() {
       </div>
 
       <div className="relative px-3 pb-2">
-        <Legend sunWindows={sunWindows} lon={lon} />
+        <Legend sunWindows={sunWindows} tz={tz} />
       </div>
 
         {/* Diagram containers */}
         <div className="flex flex-col md:flex-row gap-1.5">
           <div className="relative w-full md:flex-1 aspect-[390/339] border border-zinc-700/70 rounded-xl overflow-hidden bg-zinc-950/30">
-            <TopView lat={lat} lon={lon} date={selectedDate} nowDot={nowDot} facing={facing} sunWindows={sunWindows} />
+            <TopView lat={lat} lon={lon} date={selectedDate} nowDot={nowDot} facing={facing} sunWindows={sunWindows} tz={tz} />
           </div>
           <div className="relative w-full md:flex-1 aspect-[390/182] border border-zinc-700/70 rounded-xl overflow-hidden bg-zinc-950/30">
-            <SideView lat={lat} lon={lon} date={selectedDate} nowDot={nowDot} facing={facing} sunWindows={sunWindows} />
+            <SideView lat={lat} lon={lon} date={selectedDate} nowDot={nowDot} facing={facing} sunWindows={sunWindows} tz={tz} />
           </div>
         </div>
       </div>
 
       <footer className="mt-auto py-3 text-center" style={{ fontSize: 10, color: "#3f3f46" }}>
-        v1.0.0 · <a href="https://github.com/brio50/solarpath" target="_blank" rel="noopener noreferrer" className="hover:text-zinc-400 transition-colors">github.com/brio50/solarpath</a>
+        v1.0.1 · <a href="https://github.com/brio50/solarpath" target="_blank" rel="noopener noreferrer" className="hover:text-zinc-400 transition-colors">github.com/brio50/solarpath</a>
       </footer>
 
     </div>

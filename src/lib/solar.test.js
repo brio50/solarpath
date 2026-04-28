@@ -12,6 +12,7 @@ import {
   normalizeAzimuth,
   relativeAzimuth,
   fmtLocationTime,
+  getTimezone,
   formatDuration,
   SQUISH,
   SEASONS,
@@ -265,29 +266,45 @@ describe('relativeAzimuth', () => {
   });
 });
 
+describe('getTimezone', () => {
+  test('Seattle returns America/Los_Angeles', () => {
+    expect(getTimezone(47.6762, -122.3321)).toBe('America/Los_Angeles');
+  });
+  test('Tokyo returns Asia/Tokyo', () => {
+    expect(getTimezone(35.6895, 139.6917)).toBe('Asia/Tokyo');
+  });
+  test('London returns Europe/London', () => {
+    expect(getTimezone(51.5074, -0.1278)).toBe('Europe/London');
+  });
+});
+
 describe('fmtLocationTime', () => {
   test('null input returns "—"', () => {
-    expect(fmtLocationTime(null, 0)).toBe('—');
+    expect(fmtLocationTime(null, 'UTC')).toBe('—');
   });
-  test('formats UTC noon at lon=0 as 12:00 PM', () => {
+  test('UTC noon formats as 12:00 PM', () => {
     const t = new Date(Date.UTC(2025, 5, 21, 12, 0, 0));
-    expect(fmtLocationTime(t, 0)).toBe('12:00 PM');
+    expect(fmtLocationTime(t, 'UTC')).toBe('12:00 PM');
   });
-  test('Tokyo (lon≈135) offsets by +9h: UTC 3:00 → 12:00 PM', () => {
+  test('Tokyo (Asia/Tokyo, UTC+9, no DST): UTC 3:00 → 12:00 PM', () => {
     const t = new Date(Date.UTC(2025, 5, 21, 3, 0, 0));
-    expect(fmtLocationTime(t, 135)).toBe('12:00 PM');
+    expect(fmtLocationTime(t, 'Asia/Tokyo')).toBe('12:00 PM');
   });
-  test('Seattle (lon≈-120) offsets by -8h: UTC 20:00 → 12:00 PM', () => {
-    const t = new Date(Date.UTC(2025, 5, 21, 20, 0, 0));
-    expect(fmtLocationTime(t, -120)).toBe('12:00 PM');
+  test('Seattle summer (PDT = UTC-7): UTC 19:00 → 12:00 PM', () => {
+    const t = new Date(Date.UTC(2025, 5, 21, 19, 0, 0));
+    expect(fmtLocationTime(t, 'America/Los_Angeles')).toBe('12:00 PM');
+  });
+  test('Seattle winter (PST = UTC-8): UTC 20:00 → 12:00 PM', () => {
+    const t = new Date(Date.UTC(2025, 11, 21, 20, 0, 0));
+    expect(fmtLocationTime(t, 'America/Los_Angeles')).toBe('12:00 PM');
   });
   test('formats minutes correctly', () => {
     const t = new Date(Date.UTC(2025, 5, 21, 14, 35, 0));
-    expect(fmtLocationTime(t, 0)).toBe('2:35 PM');
+    expect(fmtLocationTime(t, 'UTC')).toBe('2:35 PM');
   });
-  test('midnight (0:00) formats as 12:00 AM', () => {
+  test('midnight (UTC) formats as 12:00 AM', () => {
     const t = new Date(Date.UTC(2025, 5, 21, 0, 0, 0));
-    expect(fmtLocationTime(t, 0)).toBe('12:00 AM');
+    expect(fmtLocationTime(t, 'UTC')).toBe('12:00 AM');
   });
 });
 

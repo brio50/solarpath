@@ -7,6 +7,9 @@ import { fileURLToPath, URL } from 'url'
 export default defineConfig({
   base: '/solarpath/',
   plugins: [react(), tailwindcss()],
+  optimizeDeps: {
+    include: ['tz-lookup'],
+  },
   resolve: {
     alias: {
       "@": fileURLToPath(new URL('./src', import.meta.url)),
