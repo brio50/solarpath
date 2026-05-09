@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.0.2 — 2026-05-09
+
+### Changed
+- Mobile facing control: slider replaced with N / E / S / W cardinal buttons (90° intervals) below the `md` breakpoint; degree text input remains for custom values
+
 ## v1.0.1 — 2026-04-27
 
 ### Fixed

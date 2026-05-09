@@ -358,7 +358,9 @@ export default function App() {
 
           <div className="flex items-center gap-2.5">
             <span className="text-xs text-zinc-500">Facing</span>
-            <div className="flex flex-col items-center gap-0.5">
+
+            {/* Desktop: slider with cardinal labels */}
+            <div className="hidden md:flex flex-col items-center gap-0.5">
               <Slider min={0} max={359} step={1} value={[facing]}
                 onValueChange={([v]) => {
                   const cardinals = [0, 90, 180, 270];
@@ -372,6 +374,24 @@ export default function App() {
                 <span>N</span><span>E</span><span>S</span><span>W</span><span>N</span>
               </div>
             </div>
+
+            {/* Mobile: cardinal direction buttons */}
+            <div className="flex md:hidden items-center gap-1">
+              {[["N", 0], ["E", 90], ["S", 180], ["W", 270]].map(([label, deg]) => (
+                <button
+                  key={label}
+                  onClick={() => { setFacing(deg); setFacingDraft(String(deg)); }}
+                  className={`h-7 w-7 rounded-md border text-xs font-medium transition-colors ${
+                    facing === deg
+                      ? "border-zinc-500 bg-zinc-700 text-zinc-100"
+                      : "border-zinc-700 bg-zinc-800 text-zinc-500 hover:text-zinc-300 hover:border-zinc-600"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
             <div className="h-7 rounded-md border border-zinc-700 bg-zinc-900 flex items-center justify-center px-2.5 shadow-sm focus-within:ring-1 focus-within:ring-zinc-400 transition-colors">
               <input
                 type="text" inputMode="numeric" min={0} max={359}
@@ -427,7 +447,7 @@ export default function App() {
       </div>
 
       <footer className="mt-auto py-3 text-center" style={{ fontSize: 10, color: "#3f3f46" }}>
-        <a href="https://github.com/brio50/solarpath/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer" className="hover:text-zinc-400 transition-colors">v1.0.1</a>
+        <a href="https://github.com/brio50/solarpath/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer" className="hover:text-zinc-400 transition-colors">v1.0.2</a>
         {" · "}
         <a href="https://github.com/brio50/solarpath" target="_blank" rel="noopener noreferrer" className="hover:text-zinc-400 transition-colors">github.com/brio50/solarpath</a>
       </footer>
