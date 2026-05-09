@@ -1,5 +1,7 @@
 # Solar Path
 
+![CI](https://github.com/brio50/solarpath/actions/workflows/deploy.yml/badge.svg)
+
 A browser-based sun path visualizer for any location and date. Shows the sun's daily arc across the sky from sunrise to sunset, with seasonal reference curves for summer solstice, equinox, and winter solstice.
 
 ## What it shows
@@ -18,7 +20,7 @@ A browser-based sun path visualizer for any location and date. Shows the sun's d
 
 - **Location search** — type any city, address, or landmark; results from OpenStreetMap/Nominatim. Or use the crosshair button to geolocate. Toggle **lat/lon** for direct coordinate entry.
 - **Date** — defaults to today; change it to explore any day of the year
-- **Facing slider** — rotate both diagrams to any compass bearing; snaps to N/E/S/W within 8°; useful for estimating direct sun exposure for a room or window each season
+- **Facing** — rotate both diagrams to any compass bearing; on desktop a slider snaps to N/E/S/W within 8°; on mobile, N/E/S/W buttons with a custom degree input. Useful for estimating direct sun exposure for a room or window each season
 
 ## Development
 
